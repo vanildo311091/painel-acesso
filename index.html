@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Acesso & Registros</title>
+    <!-- SDK do Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -13,16 +15,16 @@
         }
 
         :root {
-            --primary: #f97316;       /* Laranja principal */
-            --primary-hover: #ea580c;  /* Laranja mais escuro (hover) */
-            --bg-color: #0b1329;       /* Azul escuro profundo (fundo) */
-            --card-bg: #131d3d;        /* Azul um pouco mais claro para blocos/cards */
-            --text-main: #ffffff;      /* Branco puro */
-            --text-muted: #93c5fd;     /* Azul claro/médio para textos secundários */
-            --border-color: #1e3a8a;   /* Azul borda */
-            --success: #10b981;        /* Verde original para mensagens de sucesso */
-            --danger: #ef4444;         /* Vermelho para devolução/perigo */
-            --warning: #f97316;        /* Laranja para status perdido */
+            --primary: #f97316;       
+            --primary-hover: #ea580c;  
+            --bg-color: #0b1329;       
+            --card-bg: #131d3d;        
+            --text-main: #ffffff;      
+            --text-muted: #93c5fd;     
+            --border-color: #1e3a8a;   
+            --success: #10b981;        
+            --danger: #ef4444;         
+            --warning: #f97316;        
         }
 
         body {
@@ -37,9 +39,6 @@
             width: 100%;
             min-height: 100vh;
             background-color: var(--card-bg);
-            border-radius: 0;
-            box-shadow: none;
-            border: none;
             padding: 20px 16px;
             display: flex;
             flex-direction: column;
@@ -63,7 +62,6 @@
             color: var(--text-muted);
         }
 
-        /* Botão Flutuante Fixo na Tela de Histórico */
         .btn-floating-back {
             position: fixed;
             top: 16px;
@@ -77,7 +75,6 @@
             font-weight: 600;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-            transition: all 0.2s;
             display: flex;
             align-items: center;
             gap: 6px;
@@ -94,13 +91,13 @@
             top: 20px;
             left: 50%;
             transform: translateX(-50%) translateY(-60px);
-            background-color: var(--success); /* Verde restaurado */
+            background-color: var(--success);
             color: white;
             padding: 12px 24px;
             border-radius: 30px;
             font-size: 0.9rem;
             font-weight: 600;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); /* Sombra verde */
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
             transition: transform 0.3s ease, opacity 0.3s ease;
             opacity: 0;
             z-index: 1100;
@@ -409,12 +406,31 @@
 </head>
 <body>
 
+    <!-- TELA DE LOGIN (Apenas Senha) -->
+    <div id="login-view" class="mobile-container">
+        <div id="toast-login" class="toast"></div>
+        <div class="header" style="margin-top: 40px;">
+            <h1>Área Restrita</h1>
+            <p>Digite a senha para acessar o painel.</p>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="loginSenha">Senha de Acesso</label>
+                <input type="password" id="loginSenha" placeholder="Digite a senha" required autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="btn btn-primary">Entrar</button>
+        </form>
+    </div>
+
     <!-- Botão de Voltar Flutuante Fixo na Tela -->
     <button type="button" class="btn-floating-back hidden" id="btnVoltarCadastro">
         ← Voltar
     </button>
 
-    <div class="mobile-container" id="mainContainer">
+    <!-- TELA PRINCIPAL DO APLICATIVO -->
+    <div class="mobile-container hidden" id="mainContainer">
         <div id="toast" class="toast">✓ Cadastrado com sucesso!</div>
 
         <!-- TELA 1: CADASTRO -->
@@ -439,6 +455,7 @@
             </form>
 
             <button type="button" class="btn btn-secondary" id="btnVerRegistros">Ver Histórico de Registros</button>
+            <button type="button" class="btn btn-secondary" id="btnLogout" style="background-color: var(--danger); border-color: var(--danger); margin-top: 10px;">Sair da Conta</button>
         </div>
 
         <!-- TELA 2: REGISTROS -->
@@ -455,6 +472,20 @@
     </div>
 
     <script>
+        // CONFIGURAÇÃO DO SUPABASE (Com suas credenciais inseridas)
+        const SUPABASE_URL = 'https://amtijwkhmnvbuesdwwzw.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_wFSlX7jY0VpR8444ov9Osg_CDEbxiH5';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // E-mail interno automático associado à senha que você cadastrou no Supabase
+        const EMAIL_SISTEMA = 'balcao01@sistema.local';
+
+        const loginView = document.getElementById('login-view');
+        const mainContainer = document.getElementById('mainContainer');
+        const loginForm = document.getElementById('loginForm');
+        const btnLogout = document.getElementById('btnLogout');
+        const toastLogin = document.getElementById('toast-login');
+
         const form = document.getElementById('accessForm');
         const cadastroView = document.getElementById('cadastro-view');
         const registrosView = document.getElementById('registros-view');
@@ -464,8 +495,63 @@
         const toast = document.getElementById('toast');
         const listaRegistros = document.getElementById('listaRegistros');
 
-        let registros = JSON.parse(localStorage.getItem('registros_acesso')) || [];
+        let registros = [];
         let acaoEmAndamento = { id: null, tipo: null };
+
+        // Login usando apenas a senha digitada junto com o e-mail padrão do sistema
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const senha = document.getElementById('loginSenha').value.trim();
+
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
+                email: EMAIL_SISTEMA,
+                password: senha,
+            });
+
+            if (error) {
+                mostrarToastLogin('Senha incorreta!', true);
+            } else {
+                loginView.classList.add('hidden');
+                mainContainer.classList.remove('hidden');
+                await carregarRegistros();
+            }
+        });
+
+        // Logout
+        btnLogout.addEventListener('click', async () => {
+            await supabaseClient.auth.signOut();
+            location.reload();
+        });
+
+        // Verificar sessão ao carregar a página
+        async function verificarSessao() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+
+            if (session) {
+                loginView.classList.add('hidden');
+                mainContainer.classList.remove('hidden');
+                await carregarRegistros();
+            } else {
+                loginView.classList.remove('hidden');
+                mainContainer.classList.add('hidden');
+            }
+        }
+
+        verificarSessao();
+
+        // Funções do Banco de Dados Supabase
+        async function carregarRegistros() {
+            const { data, error } = await supabaseClient
+                .from('registros_acesso')
+                .select('*')
+                .order('id', { ascending: false });
+
+            if (error) {
+                mostrarToast('Erro ao carregar registros', true);
+                return;
+            }
+            registros = data || [];
+        }
 
         inputCartao.addEventListener('input', (e) => {
             let value = e.target.value.replace(/\D/g, '');
@@ -490,7 +576,15 @@
             }, 2500);
         }
 
-        form.addEventListener('submit', (e) => {
+        function mostrarToastLogin(mensagem, isError = false) {
+            toastLogin.textContent = mensagem;
+            toastLogin.className = `toast ${isError ? 'error' : ''} show`;
+            setTimeout(() => {
+                toastLogin.classList.remove('show');
+            }, 2500);
+        }
+
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const nome = document.getElementById('nome').value.trim();
@@ -503,24 +597,30 @@
                 return;
             }
 
-            const agora = new Date();
             const novoRegistro = {
-                id: Date.now(),
                 nome: nome,
                 cartao: cartao,
-                retirada: formatarDataHora(agora),
+                retirada: formatarDataHora(new Date()),
                 devolucao: 'Pendente',
                 status: 'ativo'
             };
 
-            registros.unshift(novoRegistro);
-            localStorage.setItem('registros_acesso', JSON.stringify(registros));
+            const { data, error } = await supabaseClient
+                .from('registros_acesso')
+                .insert([novoRegistro])
+                .select();
 
-            form.reset();
-            mostrarToast('✓ Cadastrado com sucesso!');
+            if (error) {
+                mostrarToast('Erro ao salvar no banco!', true);
+            } else {
+                registros.unshift(data[0]);
+                form.reset();
+                mostrarToast('✓ Cadastrado com sucesso!');
+            }
         });
 
-        btnVerRegistros.addEventListener('click', () => {
+        btnVerRegistros.addEventListener('click', async () => {
+            await carregarRegistros();
             acaoEmAndamento = { id: null, tipo: null };
             renderizarRegistros();
             cadastroView.classList.add('hidden');
@@ -546,43 +646,51 @@
             renderizarRegistros();
         }
 
-        function confirmarDevolucao(id) {
-            registros = registros.map(reg => {
-                if (reg.id === id) {
-                    reg.devolucao = formatarDataHora(new Date());
-                    reg.status = 'devolvido';
-                }
-                return reg;
-            });
-            localStorage.setItem('registros_acesso', JSON.stringify(registros));
-            acaoEmAndamento = { id: null, tipo: null };
-            renderizarRegistros();
+        async function confirmarDevolucao(id) {
+            const devolucaoHora = formatarDataHora(new Date());
+            const { error } = await supabaseClient
+                .from('registros_acesso')
+                .update({ devolucao: devolucaoHora, status: 'devolvido' })
+                .eq('id', id);
+
+            if (!error) {
+                await carregarRegistros();
+                acaoEmAndamento = { id: null, tipo: null };
+                renderizarRegistros();
+            } else {
+                mostrarToast('Erro ao atualizar devolução', true);
+            }
         }
 
-        function confirmarPerdido(id) {
-            registros = registros.map(reg => {
-                if (reg.id === id) {
-                    reg.devolucao = 'Perdido';
-                    reg.status = 'perdido';
-                }
-                return reg;
-            });
-            localStorage.setItem('registros_acesso', JSON.stringify(registros));
-            acaoEmAndamento = { id: null, tipo: null };
-            renderizarRegistros();
+        async function confirmarPerdido(id) {
+            const { error } = await supabaseClient
+                .from('registros_acesso')
+                .update({ devolucao: 'Perdido', status: 'perdido' })
+                .eq('id', id);
+
+            if (!error) {
+                await carregarRegistros();
+                acaoEmAndamento = { id: null, tipo: null };
+                renderizarRegistros();
+            } else {
+                mostrarToast('Erro ao atualizar status', true);
+            }
         }
 
-        function confirmarEncontrado(id) {
-            registros = registros.map(reg => {
-                if (reg.id === id) {
-                    reg.devolucao = formatarDataHora(new Date());
-                    reg.status = 'devolvido';
-                }
-                return reg;
-            });
-            localStorage.setItem('registros_acesso', JSON.stringify(registros));
-            acaoEmAndamento = { id: null, tipo: null };
-            renderizarRegistros();
+        async function confirmarEncontrado(id) {
+            const devolucaoHora = formatarDataHora(new Date());
+            const { error } = await supabaseClient
+                .from('registros_acesso')
+                .update({ devolucao: devolucaoHora, status: 'devolvido' })
+                .eq('id', id);
+
+            if (!error) {
+                await carregarRegistros();
+                acaoEmAndamento = { id: null, tipo: null };
+                renderizarRegistros();
+            } else {
+                mostrarToast('Erro ao atualizar status', true);
+            }
         }
 
         function renderizarRegistros() {
