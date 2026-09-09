@@ -15,7 +15,7 @@
         }
 
         :root {
-            --primary: #f97316;       
+            --primary: #f97316;        
             --primary-hover: #ea580c;  
             --bg-color: #0b1329;       
             --card-bg: #131d3d;        
@@ -472,13 +472,13 @@
     </div>
 
     <script>
-        // CONFIGURAÇÃO DO SUPABASE (Com suas credenciais inseridas)
+        // CONFIGURAÇÃO DO SUPABASE
         const SUPABASE_URL = 'https://amtijwkhmnvbuesdwwzw.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_wFSlX7jY0VpR8444ov9Osg_CDEbxiH5';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // E-mail interno automático associado à senha que você cadastrou no Supabase
-        const EMAIL_SISTEMA = 'balcao01@sistema.local';
+        // E-mail interno atualizado associado à senha que você cadastrou no Supabase
+        const EMAIL_SISTEMA = 'rte@gmail.com';
 
         const loginView = document.getElementById('login-view');
         const mainContainer = document.getElementById('mainContainer');
@@ -498,7 +498,7 @@
         let registros = [];
         let acaoEmAndamento = { id: null, tipo: null };
 
-        // Login usando apenas a senha digitada junto com o e-mail padrão do sistema
+        // Login usando apenas a senha digitada junto com o e-mail do sistema
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const senha = document.getElementById('loginSenha').value.trim();
