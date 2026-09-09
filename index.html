@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Acesso & Registros</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #f97316;       /* Laranja principal */
+            --primary-hover: #ea580c;  /* Laranja mais escuro (hover) */
+            --bg-color: #0b1329;       /* Azul escuro profundo (fundo) */
+            --card-bg: #131d3d;        /* Azul um pouco mais claro para blocos/cards */
+            --text-main: #ffffff;      /* Branco puro */
+            --text-muted: #93c5fd;     /* Azul claro/médio para textos secundários */
+            --border-color: #1e3a8a;   /* Azul borda */
+            --success: #10b981;        /* Verde original para mensagens de sucesso */
+            --danger: #ef4444;         /* Vermelho para devolução/perigo */
+            --warning: #f97316;        /* Laranja para status perdido */
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mobile-container {
+            width: 100%;
+            min-height: 100vh;
+            background-color: var(--card-bg);
+            border-radius: 0;
+            box-shadow: none;
+            border: none;
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .header {
+            text-align: left;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 1.6rem;
+            color: var(--text-main);
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        /* Botão Flutuante Fixo na Tela de Histórico */
+        .btn-floating-back {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            background-color: #1e3a8a;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 1000;
+        }
+
+        .btn-floating-back:hover {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-60px);
+            background-color: var(--success); /* Verde restaurado */
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); /* Sombra verde */
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
+            z-index: 1100;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.error {
+            background-color: var(--danger);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 16px;
+            font-size: 1.1rem;
+            background-color: #0b1329;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            color: var(--text-main);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.25);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.35);
+            margin-top: 8px;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background-color: #1e3a8a;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            margin-top: 16px;
+        }
+
+        .btn-secondary:hover {
+            background-color: #2563eb;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .registros-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .registro-row {
+            background-color: #0b1329;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        .registro-row.devolvido {
+            opacity: 0.65;
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .registro-row.perdido {
+            opacity: 0.85;
+            border-color: rgba(249, 115, 22, 0.4);
+        }
+
+        .row-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .user-info h3 {
+            font-size: 1.15rem;
+            color: var(--text-main);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .user-info span {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-family: monospace;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pill {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pill.ativo {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        .status-pill.devolvido {
+            background-color: rgba(147, 197, 253, 0.1);
+            color: var(--text-muted);
+        }
+
+        .status-pill.perdido {
+            background-color: rgba(249, 115, 22, 0.15);
+            color: var(--warning);
+        }
+
+        .row-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background-color: rgba(255, 255, 255, 0.02);
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            gap: 12px;
+        }
+
+        .detail-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .detail-group span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-group strong {
+            font-size: 0.9rem;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .actions-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-action-row {
+            flex: 1;
+            background-color: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 14px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .btn-lost-row {
+            flex: 1;
+            background-color: rgba(249, 115, 22, 0.15);
+            color: var(--warning);
+            border: 1px solid rgba(249, 115, 22, 0.3);
+            padding: 14px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .btn-found-row {
+            width: 100%;
+            background-color: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 14px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .confirm-box {
+            background-color: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            text-align: center;
+        }
+
+        .confirm-box.lost {
+            background-color: rgba(249, 115, 22, 0.08);
+            border-color: rgba(249, 115, 22, 0.3);
+        }
+
+        .confirm-box.found {
+            background-color: rgba(16, 185, 129, 0.08);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .confirm-box span {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .confirm-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-confirm-yes {
+            flex: 1;
+            background-color: var(--danger);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-confirm-yes.lost {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-confirm-yes.found {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-confirm-no {
+            flex: 1;
+            background-color: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .empty-list {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 60px 20px;
+            font-size: 1rem;
+            background-color: #0b1329;
+            border-radius: 16px;
+            border: 1px dashed var(--border-color);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Botão de Voltar Flutuante Fixo na Tela -->
+    <button type="button" class="btn-floating-back hidden" id="btnVoltarCadastro">
+        ← Voltar
+    </button>
+
+    <div class="mobile-container" id="mainContainer">
+        <div id="toast" class="toast">✓ Cadastrado com sucesso!</div>
+
+        <!-- TELA 1: CADASTRO -->
+        <div id="cadastro-view">
+            <div class="header">
+                <h1>Painel de Acesso</h1>
+                <p>Insira os dados para liberar o cartão virtual.</p>
+            </div>
+
+            <form id="accessForm">
+                <div class="form-group">
+                    <label for="nome">Nome</label>
+                    <input type="text" id="nome" placeholder="Digite o nome completo" required autocomplete="name">
+                </div>
+
+                <div class="form-group">
+                    <label for="cartao">Número do Cartão</label>
+                    <input type="text" id="cartao" placeholder="0000 0000 0000 0000" maxlength="19" required inputmode="numeric">
+                </div>
+
+                <button type="submit" class="btn btn-primary">Registrar Retirada</button>
+            </form>
+
+            <button type="button" class="btn btn-secondary" id="btnVerRegistros">Ver Histórico de Registros</button>
+        </div>
+
+        <!-- TELA 2: REGISTROS -->
+        <div id="registros-view" class="hidden">
+            <div class="header">
+                <h1>Histórico</h1>
+                <p>Controle de movimentações de acesso</p>
+            </div>
+
+            <div class="registros-container" id="listaRegistros">
+                <!-- Itens injetados via JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('accessForm');
+        const cadastroView = document.getElementById('cadastro-view');
+        const registrosView = document.getElementById('registros-view');
+        const btnVerRegistros = document.getElementById('btnVerRegistros');
+        const btnVoltarCadastro = document.getElementById('btnVoltarCadastro');
+        const inputCartao = document.getElementById('cartao');
+        const toast = document.getElementById('toast');
+        const listaRegistros = document.getElementById('listaRegistros');
+
+        let registros = JSON.parse(localStorage.getItem('registros_acesso')) || [];
+        let acaoEmAndamento = { id: null, tipo: null };
+
+        inputCartao.addEventListener('input', (e) => {
+            let value = e.target.value.replace(/\D/g, '');
+            value = value.substring(0, 16);
+            value = value.replace(/(\d{4})(?=\d)/g, '$1 ');
+            e.target.value = value;
+        });
+
+        function formatarDataHora(dataObj) {
+            const options = { 
+                day: '2-digit', month: '2-digit', 
+                hour: '2-digit', minute: '2-digit' 
+            };
+            return new Intl.DateTimeFormat('pt-BR', options).format(dataObj);
+        }
+
+        function mostrarToast(mensagem, isError = false) {
+            toast.textContent = mensagem;
+            toast.className = `toast ${isError ? 'error' : ''} show`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const nome = document.getElementById('nome').value.trim();
+            const cartao = inputCartao.value.trim();
+
+            const cartaoBloqueado = registros.some(reg => reg.cartao === cartao && (reg.status === 'ativo' || reg.status === 'perdido'));
+
+            if (cartaoBloqueado) {
+                mostrarToast('Cartão pendente (ativo ou perdido). Devolva-o antes!', true);
+                return;
+            }
+
+            const agora = new Date();
+            const novoRegistro = {
+                id: Date.now(),
+                nome: nome,
+                cartao: cartao,
+                retirada: formatarDataHora(agora),
+                devolucao: 'Pendente',
+                status: 'ativo'
+            };
+
+            registros.unshift(novoRegistro);
+            localStorage.setItem('registros_acesso', JSON.stringify(registros));
+
+            form.reset();
+            mostrarToast('✓ Cadastrado com sucesso!');
+        });
+
+        btnVerRegistros.addEventListener('click', () => {
+            acaoEmAndamento = { id: null, tipo: null };
+            renderizarRegistros();
+            cadastroView.classList.add('hidden');
+            registrosView.classList.remove('hidden');
+            btnVoltarCadastro.classList.remove('hidden'); 
+            window.scrollTo(0, 0);
+        });
+
+        btnVoltarCadastro.addEventListener('click', () => {
+            registrosView.classList.add('hidden');
+            cadastroView.classList.remove('hidden');
+            btnVoltarCadastro.classList.add('hidden'); 
+            window.scrollTo(0, 0);
+        });
+
+        function solicitarAcao(id, tipo) {
+            acaoEmAndamento = { id: id, tipo: tipo };
+            renderizarRegistros();
+        }
+
+        function cancelarAcao() {
+            acaoEmAndamento = { id: null, tipo: null };
+            renderizarRegistros();
+        }
+
+        function confirmarDevolucao(id) {
+            registros = registros.map(reg => {
+                if (reg.id === id) {
+                    reg.devolucao = formatarDataHora(new Date());
+                    reg.status = 'devolvido';
+                }
+                return reg;
+            });
+            localStorage.setItem('registros_acesso', JSON.stringify(registros));
+            acaoEmAndamento = { id: null, tipo: null };
+            renderizarRegistros();
+        }
+
+        function confirmarPerdido(id) {
+            registros = registros.map(reg => {
+                if (reg.id === id) {
+                    reg.devolucao = 'Perdido';
+                    reg.status = 'perdido';
+                }
+                return reg;
+            });
+            localStorage.setItem('registros_acesso', JSON.stringify(registros));
+            acaoEmAndamento = { id: null, tipo: null };
+            renderizarRegistros();
+        }
+
+        function confirmarEncontrado(id) {
+            registros = registros.map(reg => {
+                if (reg.id === id) {
+                    reg.devolucao = formatarDataHora(new Date());
+                    reg.status = 'devolvido';
+                }
+                return reg;
+            });
+            localStorage.setItem('registros_acesso', JSON.stringify(registros));
+            acaoEmAndamento = { id: null, tipo: null };
+            renderizarRegistros();
+        }
+
+        function renderizarRegistros() {
+            if (registros.length === 0) {
+                listaRegistros.innerHTML = `<div class="empty-list">Nenhum registro encontrado no histórico.</div>`;
+                return;
+            }
+
+            listaRegistros.innerHTML = '';
+            registros.forEach(reg => {
+                const isDevolvido = reg.status === 'devolvido';
+                const isPerdido = reg.status === 'perdido';
+                const isAtivo = reg.status === 'ativo';
+
+                const row = document.createElement('div');
+                let rowClass = '';
+                if (isDevolvido) rowClass = 'devolvido';
+                if (isPerdido) rowClass = 'perdido';
+                row.className = `registro-row ${rowClass}`;
+                
+                let acaoHtml = '';
+                
+                if (isAtivo) {
+                    if (acaoEmAndamento.id === reg.id) {
+                        if (acaoEmAndamento.tipo === 'devolver') {
+                            acaoHtml = `
+                                <div class="confirm-box">
+                                    <span>Confirmar devolução?</span>
+                                    <div class="confirm-buttons">
+                                        <button type="button" class="btn-confirm-yes" onclick="confirmarDevolucao(${reg.id})">Sim</button>
+                                        <button type="button" class="btn-confirm-no" onclick="cancelarAcao()">Não</button>
+                                    </div>
+                                </div>
+                            `;
+                        } else if (acaoEmAndamento.tipo === 'perdido') {
+                            acaoHtml = `
+                                <div class="confirm-box lost">
+                                    <span>Marcar cartão como perdido?</span>
+                                    <div class="confirm-buttons">
+                                        <button type="button" class="btn-confirm-yes lost" onclick="confirmarPerdido(${reg.id})">Sim</button>
+                                        <button type="button" class="btn-confirm-no" onclick="cancelarAcao()">Não</button>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    } else {
+                        acaoHtml = `
+                            <div class="actions-group">
+                                <button type="button" class="btn-action-row" onclick="solicitarAcao(${reg.id}, 'devolver')">Devolução</button>
+                                <button type="button" class="btn-lost-row" onclick="solicitarAcao(${reg.id}, 'perdido')">Perdido</button>
+                            </div>
+                        `;
+                    }
+                } else if (isPerdido) {
+                    if (acaoEmAndamento.id === reg.id && acaoEmAndamento.tipo === 'encontrado') {
+                        acaoHtml = `
+                            <div class="confirm-box found">
+                                <span>Cartão foi encontrado?</span>
+                                <div class="confirm-buttons">
+                                    <button type="button" class="btn-confirm-yes found" onclick="confirmarEncontrado(${reg.id})">Sim</button>
+                                    <button type="button" class="btn-confirm-no" onclick="cancelarAcao()">Não</button>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        acaoHtml = `<button type="button" class="btn-found-row" onclick="solicitarAcao(${reg.id}, 'encontrado')">Cartão Encontrado</button>`;
+                    }
+                }
+
+                let statusText = 'Ativo';
+                let statusClass = 'ativo';
+                if (isDevolvido) {
+                    statusText = 'Devolvido';
+                    statusClass = 'devolvido';
+                } else if (isPerdido) {
+                    statusText = 'Perdido';
+                    statusClass = 'perdido';
+                }
+
+                row.innerHTML = `
+                    <div class="row-top">
+                        <div class="user-info">
+                            <h3>${reg.nome}</h3>
+                            <span>${reg.cartao}</span>
+                        </div>
+                        <div class="status-pill ${statusClass}">
+                            ${statusText}
+                        </div>
+                    </div>
+                    
+                    <div class="row-details">
+                        <div class="detail-group">
+                            <span>Retirada</span>
+                            <strong>${reg.retirada}</strong>
+                        </div>
+                        <div class="detail-group">
+                            <span>Devolução</span>
+                            <strong>${reg.devolucao}</strong>
+                        </div>
+                    </div>
+
+                    ${acaoHtml}
+                `;
+                listaRegistros.appendChild(row);
+            });
+        }
+    </script>
+</body>
+</html>
