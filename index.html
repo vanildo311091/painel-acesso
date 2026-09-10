@@ -474,10 +474,9 @@
     <script>
         // CONFIGURAÇÃO DO SUPABASE
         const SUPABASE_URL = 'https://amtijwkhmnvbuesdwwzw.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_wFSlX7jY0VpR8444ov9Osg_CDEbxiH5';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const SUPABASE_KEY = 'SUA_CHAVE_ANON_PUBLICA_AQUI'; 
 
-        // E-mail interno atualizado associado à senha que você cadastrou no Supabase
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         const EMAIL_SISTEMA = 'rte@gmail.com';
 
         const loginView = document.getElementById('login-view');
@@ -498,40 +497,45 @@
         let registros = [];
         let acaoEmAndamento = { id: null, tipo: null };
 
-        // Login usando apenas a senha digitada junto com o e-mail do sistema
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const senha = document.getElementById('loginSenha').value.trim();
 
-            const { data, error } = await supabaseClient.auth.signInWithPassword({
-                email: EMAIL_SISTEMA,
-                password: senha,
-            });
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: EMAIL_SISTEMA,
+                    password: senha,
+                });
 
-            if (error) {
-                mostrarToastLogin('Senha incorreta!', true);
-            } else {
+                if (error) throw error;
+
                 loginView.classList.add('hidden');
                 mainContainer.classList.remove('hidden');
                 await carregarRegistros();
+            } catch (err) {
+                mostrarToastLogin('Senha incorreta ou erro de conexão!', true);
             }
         });
 
-        // Logout
         btnLogout.addEventListener('click', async () => {
             await supabaseClient.auth.signOut();
-            location.reload();
+            window.location.reload();
         });
 
-        // Verificar sessão ao carregar a página
         async function verificarSessao() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
+            try {
+                const { data: { session }, error } = await supabaseClient.auth.getSession();
+                if (error) throw error;
 
-            if (session) {
-                loginView.classList.add('hidden');
-                mainContainer.classList.remove('hidden');
-                await carregarRegistros();
-            } else {
+                if (session) {
+                    loginView.classList.add('hidden');
+                    mainContainer.classList.remove('hidden');
+                    await carregarRegistros();
+                } else {
+                    loginView.classList.remove('hidden');
+                    mainContainer.classList.add('hidden');
+                }
+            } catch (err) {
                 loginView.classList.remove('hidden');
                 mainContainer.classList.add('hidden');
             }
@@ -539,18 +543,19 @@
 
         verificarSessao();
 
-        // Funções do Banco de Dados Supabase
         async function carregarRegistros() {
-            const { data, error } = await supabaseClient
-                .from('registros_acesso')
-                .select('*')
-                .order('id', { ascending: false });
+            try {
+                const { data, error } = await supabaseClient
+                    .from('registros_acesso')
+                    .select('*')
+                    .order('id', { ascending: false });
 
-            if (error) {
+                if (error) throw error;
+                registros = data || [];
+            } catch (err) {
                 mostrarToast('Erro ao carregar registros', true);
-                return;
+                registros = [];
             }
-            registros = data || [];
         }
 
         inputCartao.addEventListener('input', (e) => {
@@ -605,17 +610,21 @@
                 status: 'ativo'
             };
 
-            const { data, error } = await supabaseClient
-                .from('registros_acesso')
-                .insert([novoRegistro])
-                .select();
+            try {
+                const { data, error } = await supabaseClient
+                    .from('registros_acesso')
+                    .insert([novoRegistro])
+                    .select();
 
-            if (error) {
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    registros.unshift(data[0]);
+                    form.reset();
+                    mostrarToast('✓ Cadastrado com sucesso!');
+                }
+            } catch (err) {
                 mostrarToast('Erro ao salvar no banco!', true);
-            } else {
-                registros.unshift(data[0]);
-                form.reset();
-                mostrarToast('✓ Cadastrado com sucesso!');
             }
         });
 
@@ -636,62 +645,65 @@
             window.scrollTo(0, 0);
         });
 
-        function solicitarAcao(id, tipo) {
+        window.solicitarAcao = function(id, tipo) {
             acaoEmAndamento = { id: id, tipo: tipo };
             renderizarRegistros();
-        }
+        };
 
-        function cancelarAcao() {
+        window.cancelarAcao = function() {
             acaoEmAndamento = { id: null, tipo: null };
             renderizarRegistros();
-        }
+        };
 
-        async function confirmarDevolucao(id) {
-            const devolucaoHora = formatarDataHora(new Date());
-            const { error } = await supabaseClient
-                .from('registros_acesso')
-                .update({ devolucao: devolucaoHora, status: 'devolvido' })
-                .eq('id', id);
+        window.confirmarDevolucao = async function(id) {
+            try {
+                const devolucaoHora = formatarDataHora(new Date());
+                const { error } = await supabaseClient
+                    .from('registros_acesso')
+                    .update({ devolucao: devolucaoHora, status: 'devolvido' })
+                    .eq('id', id);
 
-            if (!error) {
+                if (error) throw error;
                 await carregarRegistros();
                 acaoEmAndamento = { id: null, tipo: null };
                 renderizarRegistros();
-            } else {
+            } catch (err) {
                 mostrarToast('Erro ao atualizar devolução', true);
             }
-        }
+        };
 
-        async function confirmarPerdido(id) {
-            const { error } = await supabaseClient
-                .from('registros_acesso')
-                .update({ devolucao: 'Perdido', status: 'perdido' })
-                .eq('id', id);
+        window.confirmarPerdido = async function(id) {
+            try {
+                const { error } = await supabaseClient
+                    .from('registros_acesso')
+                    .update({ devolucao: 'Perdido', status: 'perdido' })
+                    .eq('id', id);
 
-            if (!error) {
+                if (error) throw error;
                 await carregarRegistros();
                 acaoEmAndamento = { id: null, tipo: null };
                 renderizarRegistros();
-            } else {
+            } catch (err) {
                 mostrarToast('Erro ao atualizar status', true);
             }
-        }
+        };
 
-        async function confirmarEncontrado(id) {
-            const devolucaoHora = formatarDataHora(new Date());
-            const { error } = await supabaseClient
-                .from('registros_acesso')
-                .update({ devolucao: devolucaoHora, status: 'devolvido' })
-                .eq('id', id);
+        window.confirmarEncontrado = async function(id) {
+            try {
+                const devolucaoHora = formatarDataHora(new Date());
+                const { error } = await supabaseClient
+                    .from('registros_acesso')
+                    .update({ devolucao: devolucaoHora, status: 'devolvido' })
+                    .eq('id', id);
 
-            if (!error) {
+                if (error) throw error;
                 await carregarRegistros();
                 acaoEmAndamento = { id: null, tipo: null };
                 renderizarRegistros();
-            } else {
+            } catch (err) {
                 mostrarToast('Erro ao atualizar status', true);
             }
-        }
+        };
 
         function renderizarRegistros() {
             if (registros.length === 0) {
