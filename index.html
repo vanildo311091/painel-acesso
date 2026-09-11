@@ -546,7 +546,7 @@
         async function carregarRegistros() {
             try {
                 const { data, error } = await supabaseClient
-                    .from('registros_acesso')
+                    .from('Controle de crachá')
                     .select('*')
                     .order('id', { ascending: false });
 
@@ -612,7 +612,7 @@
 
             try {
                 const { data, error } = await supabaseClient
-                    .from('registros_acesso')
+                    .from('Controle de crachá')
                     .insert([novoRegistro])
                     .select();
 
@@ -659,7 +659,7 @@
             try {
                 const devolucaoHora = formatarDataHora(new Date());
                 const { error } = await supabaseClient
-                    .from('registros_acesso')
+                    .from('Controle de crachá')
                     .update({ devolucao: devolucaoHora, status: 'devolvido' })
                     .eq('id', id);
 
@@ -675,7 +675,7 @@
         window.confirmarPerdido = async function(id) {
             try {
                 const { error } = await supabaseClient
-                    .from('registros_acesso')
+                    .from('Controle de crachá')
                     .update({ devolucao: 'Perdido', status: 'perdido' })
                     .eq('id', id);
 
@@ -692,7 +692,7 @@
             try {
                 const devolucaoHora = formatarDataHora(new Date());
                 const { error } = await supabaseClient
-                    .from('registros_acesso')
+                    .from('Controle de crachá')
                     .update({ devolucao: devolucaoHora, status: 'devolvido' })
                     .eq('id', id);
 
