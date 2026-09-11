@@ -180,6 +180,17 @@
             background-color: #2563eb;
         }
 
+        .btn-danger-outline {
+            background-color: transparent;
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            margin-bottom: 16px;
+        }
+
+        .btn-danger-outline:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
         .hidden {
             display: none !important;
         }
@@ -200,6 +211,7 @@
             flex-direction: column;
             gap: 16px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            position: relative;
         }
 
         .registro-row.devolvido {
@@ -232,6 +244,12 @@
             letter-spacing: 0.5px;
         }
 
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         .status-pill {
             padding: 6px 14px;
             border-radius: 20px;
@@ -254,6 +272,20 @@
         .status-pill.perdido {
             background-color: rgba(249, 115, 22, 0.15);
             color: var(--warning);
+        }
+
+        .btn-delete-single {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 4px;
+            transition: color 0.2s;
+        }
+
+        .btn-delete-single:hover {
+            color: var(--danger);
         }
 
         .row-details {
@@ -431,7 +463,7 @@
 
     <!-- TELA PRINCIPAL DO APLICATIVO -->
     <div class="mobile-container hidden" id="mainContainer">
-        <div id="toast" class="toast">✓ Cadastrado com sucesso!</div>
+        <div id="toast" class="toast">✓ Sucesso!</div>
 
         <!-- TELA 1: CADASTRO -->
         <div id="cadastro-view">
@@ -465,6 +497,8 @@
                 <p>Controle de movimentações de acesso</p>
             </div>
 
+            <button type="button" class="btn btn-danger-outline" id="btnLimparTudo">🗑️ Limpar Todo o Histórico</button>
+
             <div class="registros-container" id="listaRegistros">
                 <!-- Itens injetados via JS -->
             </div>
@@ -477,8 +511,6 @@
         const SUPABASE_KEY = 'sb_publishable_hv5R2009VodI3IYGu4mv_g_mOWmZVvp';  
 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        
-        // CORRIGIDO: E-mail atualizado para o usuário criado no Supabase
         const EMAIL_SISTEMA = 'rte001@gmail.com';
 
         const loginView = document.getElementById('login-view');
@@ -492,6 +524,7 @@
         const registrosView = document.getElementById('registros-view');
         const btnVerRegistros = document.getElementById('btnVerRegistros');
         const btnVoltarCadastro = document.getElementById('btnVoltarCadastro');
+        const btnLimparTudo = document.getElementById('btnLimparTudo');
         const inputCartao = document.getElementById('cartao');
         const toast = document.getElementById('toast');
         const listaRegistros = document.getElementById('listaRegistros');
@@ -626,8 +659,7 @@
                     mostrarToast('✓ Cadastrado com sucesso!');
                 }
             } catch (err) {
-                console.error("Erro detalhado do Supabase:", err);
-                mostrarToast('Erro: ' + (err.message || 'Falha ao salvar'), true);
+                mostrarToast('Erro ao salvar registro', true);
             }
         });
 
@@ -646,6 +678,50 @@
             cadastroView.classList.remove('hidden');
             btnVoltarCadastro.classList.add('hidden'); 
             window.scrollTo(0, 0);
+        });
+
+        // Função para apagar um único registro
+        window.deletarRegistro = async function(id) {
+            if (!confirm('Deseja realmente apagar este registro?')) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('Controle de crachá')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+                await carregarRegistros();
+                renderizarRegistros();
+                mostrarToast('Registro apagado com sucesso!');
+            } catch (err) {
+                mostrarToast('Erro ao apagar registro', true);
+            }
+        };
+
+        // Função para apagar todos os registros do histórico
+        btnLimparTudo.addEventListener('click', async () => {
+            if (registros.length === 0) {
+                mostrarToast('O histórico já está vazio!', true);
+                return;
+            }
+
+            if (!confirm('ATENÇÃO: Deseja apagar TODOS os registros do histórico permanentemente?')) return;
+
+            try {
+                // Deleta todos os registros onde o ID é maior que 0 (ou seja, todos)
+                const { error } = await supabaseClient
+                    .from('Controle de crachá')
+                    .delete()
+                    .neq('id', 0); 
+
+                if (error) throw error;
+                await carregarRegistros();
+                renderizarRegistros();
+                mostrarToast('Histórico limpo com sucesso!');
+            } catch (err) {
+                mostrarToast('Erro ao limpar o histórico', true);
+            }
         });
 
         window.solicitarAcao = function(id, tipo) {
@@ -791,8 +867,11 @@
                             <h3>${reg.nome}</h3>
                             <span>${reg.cartao}</span>
                         </div>
-                        <div class="status-pill ${statusClass}">
-                            ${statusText}
+                        <div class="header-actions">
+                            <div class="status-pill ${statusClass}">
+                                ${statusText}
+                            </div>
+                            <button type="button" class="btn-delete-single" onclick="deletarRegistro(${reg.id})" title="Apagar registro">🗑️</button>
                         </div>
                     </div>
                     
