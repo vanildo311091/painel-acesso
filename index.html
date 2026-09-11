@@ -104,7 +104,7 @@
             width: 42px;
             height: 42px;
             border-radius: 12px;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
             display: flex;
@@ -125,7 +125,7 @@
             border: 1px solid var(--border-color);
             border-radius: 12px;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-            width: 200px;
+            width: 240px;
             display: none;
             flex-direction: column;
             overflow: hidden;
@@ -136,11 +136,28 @@
             display: flex;
         }
 
+        .dropdown-divider {
+            height: 1px;
+            background-color: rgba(255, 255, 255, 0.1);
+            margin: 4px 0;
+        }
+
+        /* Sub-container das opções de filtro expansível */
+        .filter-submenu {
+            display: none;
+            flex-direction: column;
+            background-color: rgba(0, 0, 0, 0.15);
+        }
+
+        .filter-submenu.show {
+            display: flex;
+        }
+
         .dropdown-item {
             background: transparent;
             border: none;
             color: var(--text-main);
-            padding: 14px 16px;
+            padding: 12px 16px;
             text-align: left;
             font-size: 0.9rem;
             font-weight: 600;
@@ -149,52 +166,29 @@
             align-items: center;
             gap: 8px;
             transition: background 0.2s;
+            width: 100%;
+        }
+
+        .filter-submenu .dropdown-item {
+            padding-left: 24px; /* Recuo visual para indicar sub-opção */
+            font-size: 0.85rem;
         }
 
         .dropdown-item:hover {
             background-color: rgba(255, 255, 255, 0.1);
         }
 
+        .dropdown-item.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
         .dropdown-item.danger {
             color: var(--danger);
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .dropdown-item.danger:hover {
             background-color: rgba(239, 68, 68, 0.15);
-        }
-
-        /* Filtros de Histórico */
-        .filter-container {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-            overflow-x: auto;
-            padding-bottom: 4px;
-        }
-
-        .filter-btn {
-            background-color: #0b1329;
-            color: var(--text-muted);
-            border: 1px solid var(--border-color);
-            padding: 8px 14px;
-            border-radius: 10px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: all 0.2s;
-        }
-
-        .filter-btn:hover {
-            border-color: var(--primary);
-            color: var(--text-main);
-        }
-
-        .filter-btn.active {
-            background-color: var(--primary);
-            border-color: var(--primary);
-            color: white;
         }
 
         .toast {
@@ -412,7 +406,7 @@
         }
 
         .detail-group strong {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--text-main);
             font-weight: 500;
         }
@@ -567,6 +561,20 @@
         <div class="hamburger-container">
             <button type="button" class="btn-hamburger" id="btnHamburger">☰</button>
             <div class="dropdown-menu" id="dropdownMenu">
+                <!-- Botão "Filtrar" que abre as opções ao clicar -->
+                <div id="filterContainer" class="hidden">
+                    <button type="button" class="dropdown-item" id="btnMenuFiltrar">🔍 Filtrar ▾</button>
+                    <!-- Sub-opções que aparecem ao clicar em "Filtrar" -->
+                    <div class="filter-submenu" id="filterSubmenu">
+                        <button type="button" class="dropdown-item active" data-filtro="todos">📄 Todos</button>
+                        <button type="button" class="dropdown-item" data-filtro="pendentes">⏳ Não Devolvidos</button>
+                        <button type="button" class="dropdown-item" data-filtro="perdidos">⚠️ Perdidos</button>
+                        <button type="button" class="dropdown-item" data-filtro="devolvidos">✅ Devolvidos</button>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                </div>
+
+                <!-- Ações do Sistema -->
                 <button type="button" class="dropdown-item danger hidden" id="menuLimparTudo">🗑️ Limpar Histórico</button>
                 <button type="button" class="dropdown-item danger" id="menuLogout">🚪 Sair da Conta</button>
             </div>
@@ -608,14 +616,6 @@
                 <p>Controle de movimentações</p>
             </div>
 
-            <!-- Botões de Filtro -->
-            <div class="filter-container">
-                <button type="button" class="filter-btn active" data-filtro="todos">Todos</button>
-                <button type="button" class="filter-btn" data-filtro="pendentes">Não Devolvidos (Ativos)</button>
-                <button type="button" class="filter-btn" data-filtro="perdidos">Perdidos</button>
-                <button type="button" class="filter-btn" data-filtro="devolvidos">Devolvidos</button>
-            </div>
-
             <div class="registros-container" id="listaRegistros">
                 <!-- Itens injetados via JS -->
             </div>
@@ -645,13 +645,18 @@
         const btnVoltarCadastro = document.getElementById('btnVoltarCadastro');
         const btnHamburger = document.getElementById('btnHamburger');
         const dropdownMenu = document.getElementById('dropdownMenu');
+        
+        const filterContainer = document.getElementById('filterContainer');
+        const btnMenuFiltrar = document.getElementById('btnMenuFiltrar');
+        const filterSubmenu = document.getElementById('filterSubmenu');
+        const filterOptions = filterSubmenu.querySelectorAll('[data-filtro]');
+
         const menuLimparTudo = document.getElementById('menuLimparTudo');
         const menuLogout = document.getElementById('menuLogout');
 
         const inputCartao = document.getElementById('cartao');
         const toast = document.getElementById('toast');
         const listaRegistros = document.getElementById('listaRegistros');
-        const botoesFiltro = document.querySelectorAll('.filter-btn');
 
         let registros = [];
         let acaoEmAndamento = { id: null, tipo: null };
@@ -663,22 +668,39 @@
             dropdownMenu.classList.toggle('show');
         });
 
+        // Clicar no botão "Filtrar" de dentro do menu para expandir as opções
+        btnMenuFiltrar.addEventListener('click', (e) => {
+            e.stopPropagation();
+            filterSubmenu.classList.toggle('show');
+            // Altera a setinha do botão
+            if (filterSubmenu.classList.contains('show')) {
+                btnMenuFiltrar.innerHTML = '🔍 Filtrar ▴';
+            } else {
+                btnMenuFiltrar.innerHTML = '🔍 Filtrar ▾';
+            }
+        });
+
         // Fechar menu ao clicar fora
         window.addEventListener('click', () => {
             dropdownMenu.classList.remove('show');
+            filterSubmenu.classList.remove('show');
+            btnMenuFiltrar.innerHTML = '🔍 Filtrar ▾';
         });
 
-        // Gerenciamento de Filtros
-        botoesFiltro.forEach(btn => {
-            btn.addEventListener('click', () => {
-                botoesFiltro.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                filtroAtual = btn.getAttribute('data-filtro');
+        // Gerenciamento de Seleção do Filtro
+        filterOptions.forEach(opt => {
+            opt.addEventListener('click', () => {
+                filterOptions.forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+                filtroAtual = opt.getAttribute('data-filtro');
+                dropdownMenu.classList.remove('show');
+                filterSubmenu.classList.remove('show');
+                btnMenuFiltrar.innerHTML = '🔍 Filtrar ▾';
                 renderizarRegistros();
             });
         });
 
-        // Puxar para atualizar (Pull-to-refresh nativo simulado / touch events)
+        // Puxar para atualizar (Pull-to-refresh por toque)
         let touchStartY = 0;
         window.addEventListener('touchstart', (e) => {
             touchStartY = e.touches[0].clientY;
@@ -686,7 +708,6 @@
 
         window.addEventListener('touchend', async (e) => {
             let touchEndY = e.changedTouches[0].clientY;
-            // Se estiver no topo da página e puxar para baixo mais de 100px
             if (window.scrollY === 0 && (touchEndY - touchStartY > 100) && !registrosView.classList.contains('hidden')) {
                 await carregarRegistros();
                 renderizarRegistros();
@@ -771,8 +792,11 @@
 
         function formatarDataHora(dataObj) {
             const options = {  
-                day: '2-digit', month: '2-digit', 
-                hour: '2-digit', minute: '2-digit' 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',   /* <-- Adicionado o ano */
+                hour: '2-digit', 
+                minute: '2-digit' 
             };
             return new Intl.DateTimeFormat('pt-BR', options).format(dataObj);
         }
@@ -836,14 +860,15 @@
             await carregarRegistros();
             acaoEmAndamento = { id: null, tipo: null };
             filtroAtual = 'todos';
-            botoesFiltro.forEach(b => {
-                b.classList.remove('active');
-                if(b.getAttribute('data-filtro') === 'todos') b.classList.add('active');
+            filterOptions.forEach(o => {
+                o.classList.remove('active');
+                if(o.getAttribute('data-filtro') === 'todos') o.classList.add('active');
             });
             renderizarRegistros();
             cadastroView.classList.add('hidden');
             registrosView.classList.remove('hidden');
             btnVoltarCadastro.classList.remove('hidden'); 
+            filterContainer.classList.remove('hidden'); // Exibe a opção de Filtrar no menu
             menuLimparTudo.classList.remove('hidden'); 
             window.scrollTo(0, 0);
         });
@@ -852,6 +877,9 @@
             registrosView.classList.add('hidden');
             cadastroView.classList.remove('hidden');
             btnVoltarCadastro.classList.add('hidden'); 
+            filterContainer.classList.add('hidden'); // Oculta a opção de Filtrar ao voltar
+            filterSubmenu.classList.remove('show');
+            btnMenuFiltrar.innerHTML = '🔍 Filtrar ▾';
             menuLimparTudo.classList.add('hidden'); 
             window.scrollTo(0, 0);
         });
