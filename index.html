@@ -72,7 +72,7 @@
             z-index: 1000;
         }
 
-        .btn-floating-back, .btn-floating-refresh {
+        .btn-floating-back {
             background-color: #1e3a8a;
             color: var(--text-main);
             border: 1px solid var(--border-color);
@@ -87,7 +87,7 @@
             gap: 6px;
         }
 
-        .btn-floating-back:hover, .btn-floating-refresh:hover {
+        .btn-floating-back:hover {
             background-color: var(--primary);
             border-color: var(--primary);
         }
@@ -162,6 +162,39 @@
 
         .dropdown-item.danger:hover {
             background-color: rgba(239, 68, 68, 0.15);
+        }
+
+        /* Filtros de Histórico */
+        .filter-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .filter-btn {
+            background-color: #0b1329;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--primary);
+            color: var(--text-main);
+        }
+
+        .filter-btn.active {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: white;
         }
 
         .toast {
@@ -525,11 +558,6 @@
 
     <!-- Barra de Ações Fixas no Topo (Direita) -->
     <div class="top-actions hidden" id="topActionsContainer">
-        <!-- Botão Atualizar (Aparece apenas na tela de histórico) -->
-        <button type="button" class="btn-floating-refresh hidden" id="btnAtualizarRegistros">
-            🔄 Atualizar
-        </button>
-
         <!-- Botão Voltar (Aparece apenas na tela de histórico) -->
         <button type="button" class="btn-floating-back hidden" id="btnVoltarCadastro">
             ← Voltar
@@ -553,7 +581,7 @@
         <div id="cadastro-view">
             <div class="header">
                 <h1>Painel de Acesso</h1>
-                <p>Insira os dados para liberar o cartão virtual.</p>
+                <p>Insira os dados para liberar o cartão.</p>
             </div>
 
             <form id="accessForm">
@@ -578,6 +606,14 @@
             <div class="header">
                 <h1>Histórico</h1>
                 <p>Controle de movimentações</p>
+            </div>
+
+            <!-- Botões de Filtro -->
+            <div class="filter-container">
+                <button type="button" class="filter-btn active" data-filtro="todos">Todos</button>
+                <button type="button" class="filter-btn" data-filtro="pendentes">Não Devolvidos (Ativos)</button>
+                <button type="button" class="filter-btn" data-filtro="perdidos">Perdidos</button>
+                <button type="button" class="filter-btn" data-filtro="devolvidos">Devolvidos</button>
             </div>
 
             <div class="registros-container" id="listaRegistros">
@@ -607,7 +643,6 @@
         // Elementos do Topo e Menu
         const topActionsContainer = document.getElementById('topActionsContainer');
         const btnVoltarCadastro = document.getElementById('btnVoltarCadastro');
-        const btnAtualizarRegistros = document.getElementById('btnAtualizarRegistros');
         const btnHamburger = document.getElementById('btnHamburger');
         const dropdownMenu = document.getElementById('dropdownMenu');
         const menuLimparTudo = document.getElementById('menuLimparTudo');
@@ -616,9 +651,11 @@
         const inputCartao = document.getElementById('cartao');
         const toast = document.getElementById('toast');
         const listaRegistros = document.getElementById('listaRegistros');
+        const botoesFiltro = document.querySelectorAll('.filter-btn');
 
         let registros = [];
         let acaoEmAndamento = { id: null, tipo: null };
+        let filtroAtual = 'todos';
 
         // Abrir/Fechar Menu Hambúrguer
         btnHamburger.addEventListener('click', (e) => {
@@ -630,6 +667,32 @@
         window.addEventListener('click', () => {
             dropdownMenu.classList.remove('show');
         });
+
+        // Gerenciamento de Filtros
+        botoesFiltro.forEach(btn => {
+            btn.addEventListener('click', () => {
+                botoesFiltro.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                filtroAtual = btn.getAttribute('data-filtro');
+                renderizarRegistros();
+            });
+        });
+
+        // Puxar para atualizar (Pull-to-refresh nativo simulado / touch events)
+        let touchStartY = 0;
+        window.addEventListener('touchstart', (e) => {
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        window.addEventListener('touchend', async (e) => {
+            let touchEndY = e.changedTouches[0].clientY;
+            // Se estiver no topo da página e puxar para baixo mais de 100px
+            if (window.scrollY === 0 && (touchEndY - touchStartY > 100) && !registrosView.classList.contains('hidden')) {
+                await carregarRegistros();
+                renderizarRegistros();
+                mostrarToast('✓ Registros atualizados!');
+            }
+        }, { passive: true });
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -772,12 +835,16 @@
         btnVerRegistros.addEventListener('click', async () => {
             await carregarRegistros();
             acaoEmAndamento = { id: null, tipo: null };
+            filtroAtual = 'todos';
+            botoesFiltro.forEach(b => {
+                b.classList.remove('active');
+                if(b.getAttribute('data-filtro') === 'todos') b.classList.add('active');
+            });
             renderizarRegistros();
             cadastroView.classList.add('hidden');
             registrosView.classList.remove('hidden');
             btnVoltarCadastro.classList.remove('hidden'); 
-            btnAtualizarRegistros.classList.remove('hidden'); // Mostra o botão "Atualizar" no histórico
-            menuLimparTudo.classList.remove('hidden'); // Mostra a opção de limpar apenas no histórico
+            menuLimparTudo.classList.remove('hidden'); 
             window.scrollTo(0, 0);
         });
 
@@ -785,16 +852,8 @@
             registrosView.classList.add('hidden');
             cadastroView.classList.remove('hidden');
             btnVoltarCadastro.classList.add('hidden'); 
-            btnAtualizarRegistros.classList.add('hidden'); // Esconde o botão "Atualizar" na tela inicial
-            menuLimparTudo.classList.add('hidden'); // Esconde a opção de limpar na tela inicial
+            menuLimparTudo.classList.add('hidden'); 
             window.scrollTo(0, 0);
-        });
-
-        // Ação do Botão "Atualizar"
-        btnAtualizarRegistros.addEventListener('click', async () => {
-            await carregarRegistros();
-            renderizarRegistros();
-            mostrarToast('✓ Registros atualizados!');
         });
 
         window.deletarRegistro = async function(id) {
@@ -900,13 +959,20 @@
         };
 
         function renderizarRegistros() {
-            if (registros.length === 0) {
-                listaRegistros.innerHTML = `<div class="empty-list">Nenhum registro encontrado no histórico.</div>`;
+            let registrosFiltrados = registros.filter(reg => {
+                if (filtroAtual === 'pendentes') return reg.status === 'ativo';
+                if (filtroAtual === 'perdidos') return reg.status === 'perdido';
+                if (filtroAtual === 'devolvidos') return reg.status === 'devolvido';
+                return true; 
+            });
+
+            if (registrosFiltrados.length === 0) {
+                listaRegistros.innerHTML = `<div class="empty-list">Nenhum registro encontrado para este filtro.</div>`;
                 return;
             }
 
             listaRegistros.innerHTML = '';
-            registros.forEach(reg => {
+            registrosFiltrados.forEach(reg => {
                 const isDevolvido = reg.status === 'devolvido';
                 const isPerdido = reg.status === 'perdido';
                 const isAtivo = reg.status === 'ativo';
