@@ -474,10 +474,12 @@
     <script>
         // CONFIGURAÇÃO DO SUPABASE
         const SUPABASE_URL = 'https://djgwbjieslxqvhatfirc.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_hv5R2009VodI3IYGu4mv_g_mOWmZVvp'; 
+        const SUPABASE_KEY = 'sb_publishable_hv5R2009VodI3IYGu4mv_g_mOWmZVvp';  
 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        const EMAIL_SISTEMA = 'admin@painel.com';
+        
+        // CORRIGIDO: E-mail atualizado para o usuário criado no Supabase
+        const EMAIL_SISTEMA = 'rte001@gmail.com';
 
         const loginView = document.getElementById('login-view');
         const mainContainer = document.getElementById('mainContainer');
@@ -566,7 +568,7 @@
         });
 
         function formatarDataHora(dataObj) {
-            const options = { 
+            const options = {  
                 day: '2-digit', month: '2-digit', 
                 hour: '2-digit', minute: '2-digit' 
             };
