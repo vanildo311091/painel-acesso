@@ -578,7 +578,7 @@
             toast.className = `toast ${isError ? 'error' : ''} show`;
             setTimeout(() => {
                 toast.classList.remove('show');
-            }, 2500);
+            }, 3500);
         }
 
         function mostrarToastLogin(mensagem, isError = false) {
@@ -624,7 +624,8 @@
                     mostrarToast('✓ Cadastrado com sucesso!');
                 }
             } catch (err) {
-                mostrarToast('Erro ao salvar no banco!', true);
+                console.error("Erro detalhado do Supabase:", err);
+                mostrarToast('Erro: ' + (err.message || 'Falha ao salvar'), true);
             }
         });
 
