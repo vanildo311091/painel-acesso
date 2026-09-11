@@ -6,6 +6,8 @@
     <title>Painel de Acesso & Registros</title>
     <!-- SDK do Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Biblioteca para Leitura de QR Code / Código de Barras via Câmera -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         * {
             margin: 0;
@@ -25,6 +27,24 @@
             --success: #10b981;        
             --danger: #ef4444;         
             --warning: #f97316;        
+            --input-bg: #0b1329;
+            --details-bg: rgba(255, 255, 255, 0.02);
+            --details-border: rgba(255, 255, 255, 0.03);
+            --action-btn-bg: #1e3a8a;
+            --empty-bg: #0b1329;
+        }
+
+        /* Novo Tema Claro (Mais limpo, moderno e corporativo) */
+        body.light-theme {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --input-bg: #f8fafc;
+            --details-bg: #f1f5f9;
+            --details-border: #e2e8f0;
+            --action-btn-bg: #f1f5f9;
         }
 
         body {
@@ -33,6 +53,7 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         .mobile-container {
@@ -43,6 +64,27 @@
             display: flex;
             flex-direction: column;
             position: relative;
+            transition: background-color 0.3s;
+        }
+
+        /* Banner de Alerta Offline */
+        .offline-banner {
+            background-color: var(--danger);
+            color: white;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 6px;
+            display: none;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1500;
+        }
+
+        .offline-banner.show {
+            display: block;
         }
 
         .header {
@@ -73,7 +115,7 @@
         }
 
         .btn-floating-back {
-            background-color: #1e3a8a;
+            background-color: var(--action-btn-bg);
             color: var(--text-main);
             border: 1px solid var(--border-color);
             padding: 10px 14px;
@@ -81,7 +123,7 @@
             font-size: 0.85rem;
             font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             display: flex;
             align-items: center;
             gap: 6px;
@@ -90,6 +132,7 @@
         .btn-floating-back:hover {
             background-color: var(--primary);
             border-color: var(--primary);
+            color: white;
         }
 
         /* Menu Hambúrguer */
@@ -98,7 +141,7 @@
         }
 
         .btn-hamburger {
-            background-color: #1e3a8a;
+            background-color: var(--action-btn-bg);
             color: var(--text-main);
             border: 1px solid var(--border-color);
             width: 42px;
@@ -106,7 +149,7 @@
             border-radius: 12px;
             font-size: 1.1rem;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -115,17 +158,18 @@
         .btn-hamburger:hover {
             background-color: var(--primary);
             border-color: var(--primary);
+            color: white;
         }
 
         .dropdown-menu {
             position: absolute;
             top: 50px;
             right: 0;
-            background-color: #1e3a8a;
+            background-color: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-            width: 240px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+            width: 250px;
             display: none;
             flex-direction: column;
             overflow: hidden;
@@ -138,15 +182,14 @@
 
         .dropdown-divider {
             height: 1px;
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: var(--border-color);
             margin: 4px 0;
         }
 
-        /* Sub-container das opções de filtro expansível */
         .filter-submenu {
             display: none;
             flex-direction: column;
-            background-color: rgba(0, 0, 0, 0.15);
+            background-color: rgba(0, 0, 0, 0.02);
         }
 
         .filter-submenu.show {
@@ -170,12 +213,13 @@
         }
 
         .filter-submenu .dropdown-item {
-            padding-left: 24px; /* Recuo visual para indicar sub-opção */
+            padding-left: 24px; 
             font-size: 0.85rem;
         }
 
         .dropdown-item:hover {
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: rgba(249, 115, 22, 0.1);
+            color: var(--primary);
         }
 
         .dropdown-item.active {
@@ -238,7 +282,7 @@
             width: 100%;
             padding: 16px;
             font-size: 1.1rem;
-            background-color: #0b1329;
+            background-color: var(--input-bg);
             border: 1px solid var(--border-color);
             border-radius: 14px;
             color: var(--text-main);
@@ -248,7 +292,113 @@
 
         .form-group input:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.25);
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+        }
+
+        /* Container do input de cartão + botão de câmera */
+        .input-cartao-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-cartao-wrapper input {
+            padding-right: 50px;
+        }
+
+        .btn-scan-camera {
+            position: absolute;
+            right: 8px;
+            background: var(--action-btn-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            transition: background 0.2s;
+        }
+
+        .btn-scan-camera:hover {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        /* Modal do Scanner da Câmera */
+        .scanner-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .scanner-modal.show {
+            display: flex;
+        }
+
+        .scanner-box {
+            width: 100%;
+            max-width: 400px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .scanner-box h3 {
+            margin-bottom: 12px;
+            color: var(--text-main);
+            font-size: 1.1rem;
+        }
+
+        #reader {
+            width: 100% !important;
+            border-radius: 12px;
+            overflow: hidden;
+            border: none !important;
+        }
+        
+        #reader video {
+            border-radius: 12px;
+        }
+
+        .btn-close-scanner {
+            margin-top: 16px;
+            background-color: var(--danger);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .cartao-aviso-input {
+            font-size: 0.75rem;
+            color: var(--danger);
+            margin-top: 6px;
+            font-weight: 600;
+            display: none;
+        }
+        .cartao-aviso-input.show {
+            display: block;
         }
 
         .btn {
@@ -263,6 +413,11 @@
             text-align: center;
         }
 
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         .btn-primary {
             background-color: var(--primary);
             color: white;
@@ -270,23 +425,68 @@
             margin-top: 8px;
         }
 
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             background-color: var(--primary-hover);
         }
 
         .btn-secondary {
-            background-color: #1e3a8a;
+            background-color: var(--action-btn-bg);
             color: var(--text-main);
             border: 1px solid var(--border-color);
             margin-top: 16px;
         }
 
         .btn-secondary:hover {
-            background-color: #2563eb;
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: white;
         }
 
         .hidden {
             display: none !important;
+        }
+
+        /* Barra de Busca Rápida com Botão Limpar (X) */
+        .search-box {
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 40px 12px 16px;
+            font-size: 0.95rem;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-main);
+            outline: none;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+        }
+
+        .btn-clear-search {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1rem;
+            cursor: pointer;
+            display: none;
+            padding: 4px;
+        }
+
+        .btn-clear-search.show {
+            display: block;
+        }
+
+        .btn-clear-search:hover {
+            color: var(--danger);
         }
 
         .registros-container {
@@ -297,20 +497,20 @@
         }
 
         .registro-row {
-            background-color: #0b1329;
+            background-color: var(--input-bg);
             border: 1px solid var(--border-color);
             border-radius: 16px;
             padding: 18px;
             display: flex;
             flex-direction: column;
             gap: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
             position: relative;
         }
 
         .registro-row.devolvido {
             opacity: 0.65;
-            border-color: rgba(16, 185, 129, 0.2);
+            border-color: rgba(16, 185, 129, 0.25);
         }
 
         .registro-row.perdido {
@@ -359,7 +559,7 @@
         }
 
         .status-pill.devolvido {
-            background-color: rgba(147, 197, 253, 0.1);
+            background-color: rgba(100, 116, 139, 0.15);
             color: var(--text-muted);
         }
 
@@ -385,10 +585,10 @@
         .row-details {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            background-color: rgba(255, 255, 255, 0.02);
+            background-color: var(--details-bg);
             padding: 14px 16px;
             border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--details-border);
             gap: 12px;
         }
 
@@ -418,9 +618,9 @@
 
         .btn-action-row {
             flex: 1;
-            background-color: rgba(239, 68, 68, 0.15);
+            background-color: rgba(239, 68, 68, 0.1);
             color: var(--danger);
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            border: 1px solid rgba(239, 68, 68, 0.25);
             padding: 14px;
             font-size: 0.9rem;
             font-weight: 600;
@@ -431,9 +631,9 @@
 
         .btn-lost-row {
             flex: 1;
-            background-color: rgba(249, 115, 22, 0.15);
+            background-color: rgba(249, 115, 22, 0.1);
             color: var(--warning);
-            border: 1px solid rgba(249, 115, 22, 0.3);
+            border: 1px solid rgba(249, 115, 22, 0.25);
             padding: 14px;
             font-size: 0.9rem;
             font-weight: 600;
@@ -444,9 +644,9 @@
 
         .btn-found-row {
             width: 100%;
-            background-color: rgba(16, 185, 129, 0.15);
+            background-color: rgba(16, 185, 129, 0.1);
             color: var(--success);
-            border: 1px solid rgba(16, 185, 129, 0.3);
+            border: 1px solid rgba(16, 185, 129, 0.25);
             padding: 14px;
             font-size: 0.95rem;
             font-weight: 600;
@@ -457,7 +657,7 @@
 
         .confirm-box {
             background-color: rgba(239, 68, 68, 0.08);
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            border: 1px solid rgba(239, 68, 68, 0.25);
             border-radius: 12px;
             padding: 16px;
             display: flex;
@@ -468,12 +668,12 @@
 
         .confirm-box.lost {
             background-color: rgba(249, 115, 22, 0.08);
-            border-color: rgba(249, 115, 22, 0.3);
+            border-color: rgba(249, 115, 22, 0.25);
         }
 
         .confirm-box.found {
             background-color: rgba(16, 185, 129, 0.08);
-            border-color: rgba(16, 185, 129, 0.3);
+            border-color: rgba(16, 185, 129, 0.25);
         }
 
         .confirm-box span {
@@ -524,13 +724,25 @@
             color: var(--text-muted);
             padding: 60px 20px;
             font-size: 1rem;
-            background-color: #0b1329;
+            background-color: var(--input-bg);
             border-radius: 16px;
             border: 1px dashed var(--border-color);
         }
     </style>
 </head>
 <body>
+
+    <!-- Aviso de Conexão Offline -->
+    <div id="offlineBanner" class="offline-banner">⚠️ Você está offline. Verifique sua conexão com a internet.</div>
+
+    <!-- MODAL DE SCANNER DE CÂMERA -->
+    <div id="scannerModal" class="scanner-modal">
+        <div class="scanner-box">
+            <h3>Centralizar Código / Crachá</h3>
+            <div id="reader"></div>
+            <button type="button" id="btnCloseScanner" class="btn-close-scanner">Fechar Câmera</button>
+        </div>
+    </div>
 
     <!-- TELA DE LOGIN (Apenas Senha) -->
     <div id="login-view" class="mobile-container">
@@ -546,13 +758,13 @@
                 <input type="password" id="loginSenha" placeholder="Digite a senha" required autocomplete="current-password">
             </div>
 
-            <button type="submit" class="btn btn-primary">Entrar</button>
+            <button type="submit" id="btnLoginSubmit" class="btn btn-primary">Entrar</button>
         </form>
     </div>
 
     <!-- Barra de Ações Fixas no Topo (Direita) -->
     <div class="top-actions hidden" id="topActionsContainer">
-        <!-- Botão Voltar (Aparece apenas na tela de histórico) -->
+        <!-- Botão Voltar -->
         <button type="button" class="btn-floating-back hidden" id="btnVoltarCadastro">
             ← Voltar
         </button>
@@ -561,10 +773,15 @@
         <div class="hamburger-container">
             <button type="button" class="btn-hamburger" id="btnHamburger">☰</button>
             <div class="dropdown-menu" id="dropdownMenu">
-                <!-- Botão "Filtrar" que abre as opções ao clicar -->
+                <button type="button" class="dropdown-item" id="menuWhatsapp">📤 Enviar Ativos via WhatsApp</button>
+                <div class="dropdown-divider"></div>
+                
+                <!-- Botão de Alternar Tema (Claro / Escuro) -->
+                <button type="button" class="dropdown-item" id="menuToggleTheme">☀️ Alternar Tema Claro/Escuro</button>
+                <div class="dropdown-divider"></div>
+
                 <div id="filterContainer" class="hidden">
                     <button type="button" class="dropdown-item" id="btnMenuFiltrar">🔍 Filtrar ▾</button>
-                    <!-- Sub-opções que aparecem ao clicar em "Filtrar" -->
                     <div class="filter-submenu" id="filterSubmenu">
                         <button type="button" class="dropdown-item active" data-filtro="todos">📄 Todos</button>
                         <button type="button" class="dropdown-item" data-filtro="pendentes">⏳ Não Devolvidos</button>
@@ -574,7 +791,6 @@
                     <div class="dropdown-divider"></div>
                 </div>
 
-                <!-- Ações do Sistema -->
                 <button type="button" class="dropdown-item danger hidden" id="menuLimparTudo">🗑️ Limpar Histórico</button>
                 <button type="button" class="dropdown-item danger" id="menuLogout">🚪 Sair da Conta</button>
             </div>
@@ -600,10 +816,14 @@
 
                 <div class="form-group">
                     <label for="cartao">Número do Cartão</label>
-                    <input type="text" id="cartao" placeholder="0000 0000 0000 0000" maxlength="19" required inputmode="numeric">
+                    <div class="input-cartao-wrapper">
+                        <input type="text" id="cartao" placeholder="Digite ou escaneie" required inputmode="numeric" pattern="[0-9]*">
+                        <button type="button" id="btnOpenScanner" class="btn-scan-camera" title="Escanear com a câmera">📷</button>
+                    </div>
+                    <div id="cartaoAvisoInput" class="cartao-aviso-input">⚠️ Este cartão já está em uso ou perdido!</div>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Registrar Retirada</button>
+                <button type="submit" id="btnCadastrarSubmit" class="btn btn-primary">Registrar Retirada</button>
             </form>
 
             <button type="button" class="btn btn-secondary" id="btnVerRegistros">Ver Histórico de Registros</button>
@@ -616,6 +836,12 @@
                 <p>Controle de movimentações</p>
             </div>
 
+            <!-- Campo de Busca Rápida com Botão Limpar (X) -->
+            <div class="search-box">
+                <input type="text" id="inputBuscaRapida" placeholder="🔍 Buscar por nome ou cartão...">
+                <button type="button" id="btnClearSearch" class="btn-clear-search">✕</button>
+            </div>
+
             <div class="registros-container" id="listaRegistros">
                 <!-- Itens injetados via JS -->
             </div>
@@ -623,29 +849,35 @@
     </div>
 
     <script>
-        // CONFIGURAÇÃO DO SUPABASE
         const SUPABASE_URL = 'https://djgwbjieslxqvhatfirc.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_hv5R2009VodI3IYGu4mv_g_mOWmZVvp';  
 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         const EMAIL_SISTEMA = 'rte001@gmail.com';
 
+        const offlineBanner = document.getElementById('offlineBanner');
         const loginView = document.getElementById('login-view');
         const mainContainer = document.getElementById('mainContainer');
         const loginForm = document.getElementById('loginForm');
+        const btnLoginSubmit = document.getElementById('btnLoginSubmit');
         const toastLogin = document.getElementById('toast-login');
 
         const form = document.getElementById('accessForm');
+        const inputNome = document.getElementById('nome');
+        const inputCartao = document.getElementById('cartao');
+        const cartaoAvisoInput = document.getElementById('cartaoAvisoInput');
+        const btnCadastrarSubmit = document.getElementById('btnCadastrarSubmit');
         const cadastroView = document.getElementById('cadastro-view');
         const registrosView = document.getElementById('registros-view');
         const btnVerRegistros = document.getElementById('btnVerRegistros');
         
-        // Elementos do Topo e Menu
         const topActionsContainer = document.getElementById('topActionsContainer');
         const btnVoltarCadastro = document.getElementById('btnVoltarCadastro');
         const btnHamburger = document.getElementById('btnHamburger');
         const dropdownMenu = document.getElementById('dropdownMenu');
         
+        const menuWhatsapp = document.getElementById('menuWhatsapp');
+        const menuToggleTheme = document.getElementById('menuToggleTheme');
         const filterContainer = document.getElementById('filterContainer');
         const btnMenuFiltrar = document.getElementById('btnMenuFiltrar');
         const filterSubmenu = document.getElementById('filterSubmenu');
@@ -654,25 +886,119 @@
         const menuLimparTudo = document.getElementById('menuLimparTudo');
         const menuLogout = document.getElementById('menuLogout');
 
-        const inputCartao = document.getElementById('cartao');
+        const inputBuscaRapida = document.getElementById('inputBuscaRapida');
+        const btnClearSearch = document.getElementById('btnClearSearch');
         const toast = document.getElementById('toast');
         const listaRegistros = document.getElementById('listaRegistros');
+
+        // Elementos do Scanner de Câmera
+        const btnOpenScanner = document.getElementById('btnOpenScanner');
+        const scannerModal = document.getElementById('scannerModal');
+        const btnCloseScanner = document.getElementById('btnCloseScanner');
+        let html5QrCode = null;
 
         let registros = [];
         let acaoEmAndamento = { id: null, tipo: null };
         let filtroAtual = 'todos';
+        let termoBusca = '';
 
-        // Abrir/Fechar Menu Hambúrguer
+        // Preferência de Tema Salva
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-theme');
+        }
+
+        menuToggleTheme.addEventListener('click', () => {
+            dropdownMenu.classList.remove('show');
+            document.body.classList.toggle('light-theme');
+            if (document.body.classList.contains('light-theme')) {
+                localStorage.setItem('theme', 'light');
+            } else {
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+
+        // Configuração e Disparo do Scanner de Câmera
+        btnOpenScanner.addEventListener('click', () => {
+            scannerModal.classList.add('show');
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("reader");
+            }
+            
+            const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                config, 
+                (decodedText) => {
+                    // Sucesso ao ler
+                    inputCartao.value = decodedText.replace(/\s+/g, '').trim();
+                    inputCartao.dispatchEvent(new Event('input'));
+                    fecharScanner();
+                    mostrarToast('✓ Código lido com sucesso!');
+                },
+                (errorMessage) => {
+                    // Erros de leitura quadro a quadro são ignorados para fluidez
+                }
+            ).catch(err => {
+                mostrarToast('Erro ao acessar a câmera!', true);
+                fecharScanner();
+            });
+        });
+
+        function fecharScanner() {
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => {
+                    scannerModal.classList.remove('show');
+                }).catch(() => {
+                    scannerModal.classList.remove('show');
+                });
+            } else {
+                scannerModal.classList.remove('show');
+            }
+        }
+
+        btnCloseScanner.addEventListener('click', fecharScanner);
+
+        function atualizarStatusConexao() {
+            if (!navigator.onLine) {
+                offlineBanner.classList.add('show');
+            } else {
+                offlineBanner.classList.remove('show');
+            }
+        }
+        window.addEventListener('online', atualizarStatusConexao);
+        window.addEventListener('offline', atualizarStatusConexao);
+        atualizarStatusConexao();
+
+        inputNome.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                inputCartao.focus();
+            }
+        });
+
+        inputCartao.addEventListener('input', (e) => {
+            const val = e.target.value.replace(/\s+/g, '').trim();
+            if (!val) {
+                cartaoAvisoInput.classList.remove('show');
+                return;
+            }
+
+            const emUso = registros.some(reg => reg.cartao === val && (reg.status === 'ativo' || reg.status === 'perdido'));
+            if (emUso) {
+                cartaoAvisoInput.classList.add('show');
+            } else {
+                cartaoAvisoInput.classList.remove('show');
+            }
+        });
+
         btnHamburger.addEventListener('click', (e) => {
             e.stopPropagation();
             dropdownMenu.classList.toggle('show');
         });
 
-        // Clicar no botão "Filtrar" de dentro do menu para expandir as opções
         btnMenuFiltrar.addEventListener('click', (e) => {
             e.stopPropagation();
             filterSubmenu.classList.toggle('show');
-            // Altera a setinha do botão
             if (filterSubmenu.classList.contains('show')) {
                 btnMenuFiltrar.innerHTML = '🔍 Filtrar ▴';
             } else {
@@ -680,14 +1006,12 @@
             }
         });
 
-        // Fechar menu ao clicar fora
         window.addEventListener('click', () => {
             dropdownMenu.classList.remove('show');
             filterSubmenu.classList.remove('show');
             btnMenuFiltrar.innerHTML = '🔍 Filtrar ▾';
         });
 
-        // Gerenciamento de Seleção do Filtro
         filterOptions.forEach(opt => {
             opt.addEventListener('click', () => {
                 filterOptions.forEach(o => o.classList.remove('active'));
@@ -700,7 +1024,42 @@
             });
         });
 
-        // Puxar para atualizar (Pull-to-refresh por toque)
+        inputBuscaRapida.addEventListener('input', (e) => {
+            termoBusca = e.target.value.toLowerCase().trim();
+            if (termoBusca.length > 0) {
+                btnClearSearch.classList.add('show');
+            } else {
+                btnClearSearch.classList.remove('show');
+            }
+            renderizarRegistros();
+        });
+
+        btnClearSearch.addEventListener('click', () => {
+            inputBuscaRapida.value = '';
+            termoBusca = '';
+            btnClearSearch.classList.remove('show');
+            inputBuscaRapida.focus();
+            renderizarRegistros();
+        });
+
+        menuWhatsapp.addEventListener('click', () => {
+            dropdownMenu.classList.remove('show');
+            const ativos = registros.filter(r => r.status === 'ativo');
+            
+            if (ativos.length === 0) {
+                mostrarToast('Nenhum crachá ativo no momento!', true);
+                return;
+            }
+
+            let texto = `📋 *RELATÓRIO DE CRACHÁS ATIVOS*\n\n`;
+            ativos.forEach((r, index) => {
+                texto += `${index + 1}. *${r.nome}* (Cartão: ${r.cartao})\nRetirada: ${r.retirada}\n\n`;
+            });
+
+            const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
+            window.open(url, '_blank');
+        });
+
         let touchStartY = 0;
         window.addEventListener('touchstart', (e) => {
             touchStartY = e.touches[0].clientY;
@@ -719,6 +1078,9 @@
             e.preventDefault();
             const senha = document.getElementById('loginSenha').value.trim();
 
+            btnLoginSubmit.disabled = true;
+            btnLoginSubmit.textContent = 'Entrando...';
+
             try {
                 const { data, error } = await supabaseClient.auth.signInWithPassword({
                     email: EMAIL_SISTEMA,
@@ -733,6 +1095,9 @@
                 await carregarRegistros();
             } catch (err) {
                 mostrarToastLogin('Senha incorreta ou erro de conexão!', true);
+            } finally {
+                btnLoginSubmit.disabled = false;
+                btnLoginSubmit.textContent = 'Entrar';
             }
         });
 
@@ -769,6 +1134,8 @@
         verificarSessao();
 
         async function carregarRegistros() {
+            listaRegistros.innerHTML = `<div class="empty-list">Carregando registros...</div>`;
+
             try {
                 const { data, error } = await supabaseClient
                     .from('Controle de crachá')
@@ -776,25 +1143,33 @@
                     .order('id', { ascending: false });
 
                 if (error) throw error;
-                registros = data || [];
+
+                registros = (data || []).sort((a, b) => {
+                    const pesoStatus = (status) => {
+                        if (status === 'ativo') return 1;
+                        if (status === 'perdido') return 2;
+                        return 3; 
+                    };
+
+                    const pesoA = pesoStatus(a.status);
+                    const pesoB = pesoStatus(b.status);
+
+                    if (pesoA !== pesoB) {
+                        return pesoA - pesoB;
+                    }
+                    return b.id - a.id;
+                });
             } catch (err) {
                 mostrarToast('Erro ao carregar registros', true);
                 registros = [];
             }
         }
 
-        inputCartao.addEventListener('input', (e) => {
-            let value = e.target.value.replace(/\D/g, '');
-            value = value.substring(0, 16);
-            value = value.replace(/(\d{4})(?=\d)/g, '$1 ');
-            e.target.value = value;
-        });
-
         function formatarDataHora(dataObj) {
             const options = {  
                 day: '2-digit', 
                 month: '2-digit', 
-                year: 'numeric',   /* <-- Adicionado o ano */
+                year: 'numeric',   
                 hour: '2-digit', 
                 minute: '2-digit' 
             };
@@ -820,8 +1195,8 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const nome = document.getElementById('nome').value.trim();
-            const cartao = inputCartao.value.trim();
+            const nome = inputNome.value.trim();
+            const cartao = inputCartao.value.replace(/\s+/g, '').trim();
 
             const cartaoBloqueado = registros.some(reg => reg.cartao === cartao && (reg.status === 'ativo' || reg.status === 'perdido'));
 
@@ -838,6 +1213,9 @@
                 status: 'ativo'
             };
 
+            btnCadastrarSubmit.disabled = true;
+            btnCadastrarSubmit.textContent = 'Salvando...';
+
             try {
                 const { data, error } = await supabaseClient
                     .from('Controle de crachá')
@@ -849,14 +1227,22 @@
                 if (data && data.length > 0) {
                     registros.unshift(data[0]);
                     form.reset();
+                    cartaoAvisoInput.classList.remove('show');
                     mostrarToast('✓ Cadastrado com sucesso!');
+                    inputNome.focus();
                 }
             } catch (err) {
                 mostrarToast('Erro ao salvar registro', true);
+            } finally {
+                btnCadastrarSubmit.disabled = false;
+                btnCadastrarSubmit.textContent = 'Registrar Retirada';
             }
         });
 
         btnVerRegistros.addEventListener('click', async () => {
+            inputBuscaRapida.value = '';
+            termoBusca = '';
+            btnClearSearch.classList.remove('show');
             await carregarRegistros();
             acaoEmAndamento = { id: null, tipo: null };
             filtroAtual = 'todos';
@@ -868,7 +1254,7 @@
             cadastroView.classList.add('hidden');
             registrosView.classList.remove('hidden');
             btnVoltarCadastro.classList.remove('hidden'); 
-            filterContainer.classList.remove('hidden'); // Exibe a opção de Filtrar no menu
+            filterContainer.classList.remove('hidden'); 
             menuLimparTudo.classList.remove('hidden'); 
             window.scrollTo(0, 0);
         });
@@ -877,11 +1263,12 @@
             registrosView.classList.add('hidden');
             cadastroView.classList.remove('hidden');
             btnVoltarCadastro.classList.add('hidden'); 
-            filterContainer.classList.add('hidden'); // Oculta a opção de Filtrar ao voltar
+            filterContainer.classList.add('hidden'); 
             filterSubmenu.classList.remove('show');
             btnMenuFiltrar.innerHTML = '🔍 Filtrar ▾';
             menuLimparTudo.classList.add('hidden'); 
             window.scrollTo(0, 0);
+            inputNome.focus();
         });
 
         window.deletarRegistro = async function(id) {
@@ -988,14 +1375,24 @@
 
         function renderizarRegistros() {
             let registrosFiltrados = registros.filter(reg => {
-                if (filtroAtual === 'pendentes') return reg.status === 'ativo';
-                if (filtroAtual === 'perdidos') return reg.status === 'perdido';
-                if (filtroAtual === 'devolvidos') return reg.status === 'devolvido';
-                return true; 
+                let passaFiltroStatus = true;
+                if (filtroAtual === 'pendentes') passaFiltroStatus = reg.status === 'ativo';
+                if (filtroAtual === 'perdidos') passaFiltroStatus = reg.status === 'perdido';
+                if (filtroAtual === 'devolvidos') passaFiltroStatus = reg.status === 'devolvido';
+
+                if (!passaFiltroStatus) return false;
+
+                if (termoBusca) {
+                    const nomeMatch = reg.nome && reg.nome.toLowerCase().includes(termoBusca);
+                    const cartaoMatch = reg.cartao && reg.cartao.toLowerCase().includes(termoBusca);
+                    return nomeMatch || cartaoMatch;
+                }
+
+                return true;
             });
 
             if (registrosFiltrados.length === 0) {
-                listaRegistros.innerHTML = `<div class="empty-list">Nenhum registro encontrado para este filtro.</div>`;
+                listaRegistros.innerHTML = `<div class="empty-list">Nenhum registro encontrado.</div>`;
                 return;
             }
 
