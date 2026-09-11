@@ -47,13 +47,13 @@
 
         .header {
             text-align: left;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .header h1 {
             font-size: 1.6rem;
             color: var(--text-main);
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             font-weight: 700;
         }
 
@@ -62,14 +62,21 @@
             color: var(--text-muted);
         }
 
-        .btn-floating-back {
+        /* Botões de Ação Fixos no Topo (Direita) */
+        .top-actions {
             position: fixed;
             top: 16px;
             right: 16px;
+            display: flex;
+            gap: 8px;
+            z-index: 1000;
+        }
+
+        .btn-floating-back, .btn-floating-refresh {
             background-color: #1e3a8a;
             color: var(--text-main);
             border: 1px solid var(--border-color);
-            padding: 10px 16px;
+            padding: 10px 14px;
             border-radius: 12px;
             font-size: 0.85rem;
             font-weight: 600;
@@ -78,12 +85,83 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            z-index: 1000;
         }
 
-        .btn-floating-back:hover {
+        .btn-floating-back:hover, .btn-floating-refresh:hover {
             background-color: var(--primary);
             border-color: var(--primary);
+        }
+
+        /* Menu Hambúrguer */
+        .hamburger-container {
+            position: relative;
+        }
+
+        .btn-hamburger {
+            background-color: #1e3a8a;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-hamburger:hover {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 50px;
+            right: 0;
+            background-color: #1e3a8a;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            width: 200px;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 1100;
+        }
+
+        .dropdown-menu.show {
+            display: flex;
+        }
+
+        .dropdown-item {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            padding: 14px 16px;
+            text-align: left;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .dropdown-item.danger {
+            color: var(--danger);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .dropdown-item.danger:hover {
+            background-color: rgba(239, 68, 68, 0.15);
         }
 
         .toast {
@@ -100,7 +178,7 @@
             box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
             transition: transform 0.3s ease, opacity 0.3s ease;
             opacity: 0;
-            z-index: 1100;
+            z-index: 1200;
             pointer-events: none;
             white-space: nowrap;
         }
@@ -178,17 +256,6 @@
 
         .btn-secondary:hover {
             background-color: #2563eb;
-        }
-
-        .btn-danger-outline {
-            background-color: transparent;
-            color: var(--danger);
-            border: 1px solid var(--danger);
-            margin-bottom: 16px;
-        }
-
-        .btn-danger-outline:hover {
-            background-color: rgba(239, 68, 68, 0.1);
         }
 
         .hidden {
@@ -456,10 +523,27 @@
         </form>
     </div>
 
-    <!-- Botão de Voltar Flutuante Fixo na Tela -->
-    <button type="button" class="btn-floating-back hidden" id="btnVoltarCadastro">
-        ← Voltar
-    </button>
+    <!-- Barra de Ações Fixas no Topo (Direita) -->
+    <div class="top-actions hidden" id="topActionsContainer">
+        <!-- Botão Atualizar (Aparece apenas na tela de histórico) -->
+        <button type="button" class="btn-floating-refresh hidden" id="btnAtualizarRegistros">
+            🔄 Atualizar
+        </button>
+
+        <!-- Botão Voltar (Aparece apenas na tela de histórico) -->
+        <button type="button" class="btn-floating-back hidden" id="btnVoltarCadastro">
+            ← Voltar
+        </button>
+
+        <!-- Menu Hambúrguer -->
+        <div class="hamburger-container">
+            <button type="button" class="btn-hamburger" id="btnHamburger">☰</button>
+            <div class="dropdown-menu" id="dropdownMenu">
+                <button type="button" class="dropdown-item danger hidden" id="menuLimparTudo">🗑️ Limpar Histórico</button>
+                <button type="button" class="dropdown-item danger" id="menuLogout">🚪 Sair da Conta</button>
+            </div>
+        </div>
+    </div>
 
     <!-- TELA PRINCIPAL DO APLICATIVO -->
     <div class="mobile-container hidden" id="mainContainer">
@@ -487,17 +571,14 @@
             </form>
 
             <button type="button" class="btn btn-secondary" id="btnVerRegistros">Ver Histórico de Registros</button>
-            <button type="button" class="btn btn-secondary" id="btnLogout" style="background-color: var(--danger); border-color: var(--danger); margin-top: 10px;">Sair da Conta</button>
         </div>
 
         <!-- TELA 2: REGISTROS -->
         <div id="registros-view" class="hidden">
             <div class="header">
                 <h1>Histórico</h1>
-                <p>Controle de movimentações de acesso</p>
+                <p>Controle de movimentações</p>
             </div>
-
-            <button type="button" class="btn btn-danger-outline" id="btnLimparTudo">🗑️ Limpar Todo o Histórico</button>
 
             <div class="registros-container" id="listaRegistros">
                 <!-- Itens injetados via JS -->
@@ -516,21 +597,39 @@
         const loginView = document.getElementById('login-view');
         const mainContainer = document.getElementById('mainContainer');
         const loginForm = document.getElementById('loginForm');
-        const btnLogout = document.getElementById('btnLogout');
         const toastLogin = document.getElementById('toast-login');
 
         const form = document.getElementById('accessForm');
         const cadastroView = document.getElementById('cadastro-view');
         const registrosView = document.getElementById('registros-view');
         const btnVerRegistros = document.getElementById('btnVerRegistros');
+        
+        // Elementos do Topo e Menu
+        const topActionsContainer = document.getElementById('topActionsContainer');
         const btnVoltarCadastro = document.getElementById('btnVoltarCadastro');
-        const btnLimparTudo = document.getElementById('btnLimparTudo');
+        const btnAtualizarRegistros = document.getElementById('btnAtualizarRegistros');
+        const btnHamburger = document.getElementById('btnHamburger');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        const menuLimparTudo = document.getElementById('menuLimparTudo');
+        const menuLogout = document.getElementById('menuLogout');
+
         const inputCartao = document.getElementById('cartao');
         const toast = document.getElementById('toast');
         const listaRegistros = document.getElementById('listaRegistros');
 
         let registros = [];
         let acaoEmAndamento = { id: null, tipo: null };
+
+        // Abrir/Fechar Menu Hambúrguer
+        btnHamburger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdownMenu.classList.toggle('show');
+        });
+
+        // Fechar menu ao clicar fora
+        window.addEventListener('click', () => {
+            dropdownMenu.classList.remove('show');
+        });
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -546,13 +645,17 @@
 
                 loginView.classList.add('hidden');
                 mainContainer.classList.remove('hidden');
+                topActionsContainer.classList.remove('hidden');
                 await carregarRegistros();
             } catch (err) {
                 mostrarToastLogin('Senha incorreta ou erro de conexão!', true);
             }
         });
 
-        btnLogout.addEventListener('click', async () => {
+        menuLogout.addEventListener('click', async () => {
+            dropdownMenu.classList.remove('show');
+            if (!confirm('Deseja realmente sair da conta?')) return;
+
             await supabaseClient.auth.signOut();
             window.location.reload();
         });
@@ -565,14 +668,17 @@
                 if (session) {
                     loginView.classList.add('hidden');
                     mainContainer.classList.remove('hidden');
+                    topActionsContainer.classList.remove('hidden');
                     await carregarRegistros();
                 } else {
                     loginView.classList.remove('hidden');
                     mainContainer.classList.add('hidden');
+                    topActionsContainer.classList.add('hidden');
                 }
             } catch (err) {
                 loginView.classList.remove('hidden');
                 mainContainer.classList.add('hidden');
+                topActionsContainer.classList.add('hidden');
             }
         }
 
@@ -670,6 +776,8 @@
             cadastroView.classList.add('hidden');
             registrosView.classList.remove('hidden');
             btnVoltarCadastro.classList.remove('hidden'); 
+            btnAtualizarRegistros.classList.remove('hidden'); // Mostra o botão "Atualizar" no histórico
+            menuLimparTudo.classList.remove('hidden'); // Mostra a opção de limpar apenas no histórico
             window.scrollTo(0, 0);
         });
 
@@ -677,10 +785,18 @@
             registrosView.classList.add('hidden');
             cadastroView.classList.remove('hidden');
             btnVoltarCadastro.classList.add('hidden'); 
+            btnAtualizarRegistros.classList.add('hidden'); // Esconde o botão "Atualizar" na tela inicial
+            menuLimparTudo.classList.add('hidden'); // Esconde a opção de limpar na tela inicial
             window.scrollTo(0, 0);
         });
 
-        // Função para apagar um único registro
+        // Ação do Botão "Atualizar"
+        btnAtualizarRegistros.addEventListener('click', async () => {
+            await carregarRegistros();
+            renderizarRegistros();
+            mostrarToast('✓ Registros atualizados!');
+        });
+
         window.deletarRegistro = async function(id) {
             if (!confirm('Deseja realmente apagar este registro?')) return;
 
@@ -699,8 +815,8 @@
             }
         };
 
-        // Função para apagar todos os registros do histórico
-        btnLimparTudo.addEventListener('click', async () => {
+        menuLimparTudo.addEventListener('click', async () => {
+            dropdownMenu.classList.remove('show');
             if (registros.length === 0) {
                 mostrarToast('O histórico já está vazio!', true);
                 return;
@@ -709,7 +825,6 @@
             if (!confirm('ATENÇÃO: Deseja apagar TODOS os registros do histórico permanentemente?')) return;
 
             try {
-                // Deleta todos os registros onde o ID é maior que 0 (ou seja, todos)
                 const { error } = await supabaseClient
                     .from('Controle de crachá')
                     .delete()
@@ -843,9 +958,9 @@
                                 <div class="confirm-buttons">
                                     <button type="button" class="btn-confirm-yes found" onclick="confirmarEncontrado(${reg.id})">Sim</button>
                                     <button type="button" class="btn-confirm-no" onclick="cancelarAcao()">Não</button>
+                                    </div>
                                 </div>
-                            </div>
-                        `;
+                            `;
                     } else {
                         acaoHtml = `<button type="button" class="btn-found-row" onclick="solicitarAcao(${reg.id}, 'encontrado')">Cartão Encontrado</button>`;
                     }
@@ -857,7 +972,7 @@
                     statusText = 'Devolvido';
                     statusClass = 'devolvido';
                 } else if (isPerdido) {
-                    statusText = 'Perdido';
+                    statusText= 'Perdido';
                     statusClass = 'perdido';
                 }
 
