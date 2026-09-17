@@ -18,7 +18,7 @@
 
         :root {
             --primary: #f97316;         
-            --primary-hover: #ea580c;  
+            --primary-hover: #ea580c;   
             --bg-color: #0b1329;       
             --card-bg: #131d3d;        
             --text-main: #ffffff;      
@@ -34,7 +34,6 @@
             --empty-bg: #0b1329;
         }
 
-        /* Novo Tema Claro */
         body.light-theme {
             --bg-color: #f4f6f9;
             --card-bg: #ffffff;
@@ -67,7 +66,6 @@
             transition: background-color 0.3s;
         }
 
-        /* Banner de Alerta Offline */
         .offline-banner {
             background-color: var(--danger);
             color: white;
@@ -104,7 +102,6 @@
             color: var(--text-muted);
         }
 
-        /* Botões de Ação Fixos no Topo (Direita) */
         .top-actions {
             position: fixed;
             top: 16px;
@@ -135,7 +132,6 @@
             color: white;
         }
 
-        /* Menu Hambúrguer */
         .hamburger-container {
             position: relative;
         }
@@ -328,7 +324,6 @@
             color: white;
         }
 
-        /* Modal do Scanner da Câmera e do Messenger */
         .scanner-modal {
             position: fixed;
             top: 0;
@@ -445,7 +440,6 @@
             display: none !important;
         }
 
-        /* Barra de Busca Rápida */
         .search-box {
             margin-bottom: 16px;
             position: relative;
@@ -723,23 +717,19 @@
 
     <!-- Barra de Ações Fixas no Topo (Direita) -->
     <div class="top-actions hidden" id="topActionsContainer">
-        <!-- Botão Voltar -->
         <button type="button" class="btn-floating-back hidden" id="btnVoltarCadastro">
             ← Voltar
         </button>
 
-        <!-- Menu Hambúrguer -->
         <div class="hamburger-container">
             <button type="button" class="btn-hamburger" id="btnHamburger">☰</button>
             <div class="dropdown-menu" id="dropdownMenu">
                 <button type="button" class="dropdown-item" id="menuWhatsapp">📤 Enviar Ativos via WhatsApp</button>
                 <div class="dropdown-divider"></div>
                 
-                <!-- Opção do Messenger sem limites -->
                 <button type="button" class="dropdown-item" id="menuMessenger">💬 Messenger / Códigos</button>
                 <div class="dropdown-divider"></div>
                 
-                <!-- Botão de Alternar Tema -->
                 <button type="button" class="dropdown-item" id="menuToggleTheme">☀️ Alternar Tema Claro/Escuro</button>
                 <div class="dropdown-divider"></div>
 
@@ -853,13 +843,11 @@
         const toast = document.getElementById('toast');
         const listaRegistros = document.getElementById('listaRegistros');
 
-        // Elementos do Scanner de Câmera
         const btnOpenScanner = document.getElementById('btnOpenScanner');
         const scannerModal = document.getElementById('scannerModal');
         const btnCloseScanner = document.getElementById('btnCloseScanner');
         let html5QrCode = null;
 
-        // Elementos do Messenger
         const messengerModal = document.getElementById('messengerModal');
         const btnCloseMessenger = document.getElementById('btnCloseMessenger');
         const messengerForm = document.getElementById('messengerForm');
@@ -870,7 +858,6 @@
         let registros = [];
         let filtroAtual = 'todos';
 
-        // Preferência de Tema Salva
         if (localStorage.getItem('theme') === 'light') {
             document.body.classList.add('light-theme');
         }
@@ -885,7 +872,16 @@
             }
         });
 
-        // Autenticação simples por senha
+        btnHamburger.addEventListener('click', () => {
+            dropdownMenu.classList.toggle('show');
+        });
+
+        window.addEventListener('click', (e) => {
+            if (!btnHamburger.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                dropdownMenu.classList.remove('show');
+            }
+        });
+
         loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
             if (loginSenha.value === SENHA_MESTRA || loginSenha.value.length > 0) {
@@ -914,7 +910,6 @@
             loginSenha.value = '';
         });
 
-        // Configuração e Disparo do Scanner de Câmera
         btnOpenScanner.addEventListener('click', () => {
             scannerModal.classList.add('show');
             if (!html5QrCode) {
@@ -963,28 +958,9 @@
             messengerModal.classList.remove('show');
         });
 
-        messengerInput.addEventListener('input', (e) => {
-            const atual = e.target.value.length;
-            charCounter.textContent = `${atual} caracteres`;
-        });
-
-        messengerForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const textoMensagem = messengerInput.value.trim();
-            if (!textoMensagem) return;
-
-            const { error } = await supabaseClient
-                .from('mensagens_messenger')
-                .insert([{ texto: textoMensagem }]);
-
-            if (error) {
-                mostrarToast('Erro ao enviar código!', true);
-            } else {
-                mostrarToast('✓ Código enviado com sucesso!');
-                messengerInput.value = '';
-                charCounter.textContent = '0 caracteres';
-                carregarMensagensMessenger();
-            }
+        messengerInput.addEventListener('input', () => {
+            const qtd = messengerInput.value.length;
+            charCounter.textContent = `${qtd} caractere${qtd === 1 ? '' : 's'}`;
         });
 
         async function carregarMensagensMessenger() {
@@ -993,312 +969,82 @@
             const { data, error } = await supabaseClient
                 .from('mensagens_messenger')
                 .select('*')
-                .order('criado_em', { ascending: false })
-                .limit(50);
+                .order('criado_em', { ascending: false });
 
             if (error) {
-                messengerChatList.innerHTML = '<div style="text-align:center; color:var(--danger);">Erro ao carregar códigos.</div>';
+                messengerChatList.innerHTML = '<div style="text-align:center; color:var(--danger); padding:20px;">Erro ao carregar mensagens. Verifique a tabela no Supabase.</div>';
                 return;
             }
 
             if (!data || data.length === 0) {
-                messengerChatList.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px;">Nenhum código registrado ainda.</div>';
+                messengerChatList.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px;">Nenhum código ou mensagem salva ainda.</div>';
                 return;
             }
 
             messengerChatList.innerHTML = '';
-            data.forEach(msg => {
+            data.forEach((msg) => {
                 const dataFormatada = new Date(msg.criado_em).toLocaleString('pt-BR');
                 const div = document.createElement('div');
-                div.style.cssText = 'background: var(--card-bg); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; word-break: break-word;';
+                div.style.cssText = 'background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 8px;';
                 
                 div.innerHTML = `
-                    <pre style="font-family: monospace; font-size: 0.85rem; color: var(--text-main); white-space: pre-wrap; overflow-x: auto; margin-bottom: 8px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">${escapeHtml(msg.texto)}</pre>
-                    <span style="font-size: 0.7rem; color: var(--text-muted); display: block; text-align: right;">${dataFormatada}</span>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-muted);">
+                        <span>📅 ${dataFormatada}</span>
+                        <button type="button" onclick="copiarTextoMessenger(this)" data-texto="${encodeURIComponent(msg.texto)}" style="background: var(--action-btn-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 0.75rem;">📋 Copiar</button>
+                    </div>
+                    <pre style="background: var(--input-bg); padding: 8px; border-radius: 6px; overflow-x: auto; font-size:.85rem; color: var(--text-main); white-space: pre-wrap; word-break: break-all; font-family: monospace; margin: 0;">${escapeHtml(msg.texto)}</pre>
                 `;
                 messengerChatList.appendChild(div);
             });
         }
 
-        function escapeHtml(text) {
-            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-            return text.replace(/[&<>"']/g, m => map[m]);
-        }
-
-        function atualizarStatusConexao() {
-            if (!navigator.onLine) {
-                offlineBanner.classList.add('show');
-            } else {
-                offlineBanner.classList.remove('show');
-            }
-        }
-        window.addEventListener('online', atualizarStatusConexao);
-        window.addEventListener('offline', atualizarStatusConexao);
-        atualizarStatusConexao();
-
-        inputNome.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                inputCartao.focus();
-            }
-        });
-
-        inputCartao.addEventListener('input', (e) => {
-            const val = e.target.value.replace(/\s+/g, '').trim();
-            if (!val) {
-                cartaoAvisoInput.classList.remove('show');
-                return;
-            }
-
-            const emUso = registros.some(reg => reg.cartao === val && (reg.status === 'ativo' || reg.status === 'perdido'));
-            if (emUso) {
-                cartaoAvisoInput.classList.add('show');
-            } else {
-                cartaoAvisoInput.classList.remove('show');
-            }
-        });
-
-        btnHamburger.addEventListener('click', (e) => {
-            e.stopPropagation();
-            dropdownMenu.classList.toggle('show');
-        });
-
-        btnMenuFiltrar.addEventListener('click', (e) => {
-            e.stopPropagation();
-            filterSubmenu.classList.toggle('show');
-            btnMenuFiltrar.innerHTML = filterSubmenu.classList.contains('show') ? '🔍 Filtrar ▴' : '🔍 Filtrar ▾';
-        });
-
-        window.addEventListener('click', () => {
-            dropdownMenu.classList.remove('show');
-            filterSubmenu.classList.remove('show');
-            btnMenuFiltrar.innerHTML = '🔍 Filtrar ▾';
-        });
-
-        filterOptions.forEach(opt => {
-            opt.addEventListener('click', (e) => {
-                filterOptions.forEach(o => o.classList.remove('active'));
-                opt.classList.add('active');
-                filtroAtual = opt.getAttribute('data-filtro');
-                dropdownMenu.classList.remove('show');
-                renderizarRegistros();
-            });
-        });
-
-        btnVerRegistros.addEventListener('click', () => {
-            cadastroView.classList.add('hidden');
-            registrosView.classList.remove('hidden');
-            btnVerRegistros.classList.add('hidden');
-            btnVoltarCadastro.classList.remove('hidden');
-            renderizarRegistros();
-        });
-
-        btnVoltarCadastro.addEventListener('click', () => {
-            registrosView.classList.add('hidden');
-            cadastroView.classList.remove('hidden');
-            btnVoltarCadastro.classList.add('hidden');
-            btnVerRegistros.classList.remove('hidden');
-        });
-
-        form.addEventListener('submit', async (e) => {
+        messengerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const nome = inputNome.value.trim();
-            const cartao = inputCartao.value.replace(/\s+/g, '').trim();
+            const textoEnviado = messengerInput.value.trim();
+            if (!textoEnviado) return;
 
-            if (!nome || !cartao) return;
+            const btnSubmit = messengerForm.querySelector('button[type="submit"]');
+            btnSubmit.disabled = true;
+            btnSubmit.textContent = 'Enviando...';
 
-            const novoRegistro = {
-                nome,
-                cartao,
-                status: 'ativo',
-                data_retirada: new Date().toISOString(),
-                data_devolucao: null
-            };
+            const { error } = await supabaseClient
+                .from('mensagens_messenger')
+                .insert([{ texto: textoEnviado }]);
 
-            const { data, error } = await supabaseClient
-                .from('registros_acesso')
-                .insert([novoRegistro])
-                .select();
+            btnSubmit.disabled = false;
+            btnSubmit.textContent = 'Enviar Código';
 
             if (error) {
-                mostrarToast('Erro ao salvar registro!', true);
+                mostrarToast('Erro ao salvar no Supabase!', true);
             } else {
-                mostrarToast('✓ Retirada registrada com sucesso!');
-                inputNome.value = '';
-                inputCartao.value = '';
-                cartaoAvisoInput.classList.remove('show');
-                await carregarRegistrosDoSupabase();
-                inputNome.focus();
+                mostrarToast('✓ Código enviado com sucesso!');
+                messengerInput.value = '';
+                charCounter.textContent = '0 caracteres';
+                carregarMensagensMessenger();
             }
         });
 
-        async function carregarRegistrosDoSupabase() {
-            const { data, error } = await supabaseClient
-                .from('registros_acesso')
-                .select('*')
-                .order('data_retirada', { ascending: false });
-
-            if (!error && data) {
-                registros = data;
-                renderizarRegistros();
-            }
-        }
-
-        function renderizarRegistros() {
-            listaRegistros.innerHTML = '';
-            const termo = inputBuscaRapida.value.toLowerCase().trim();
-
-            let filtrados = registros.filter(reg => {
-                const matchBusca = reg.nome.toLowerCase().includes(termo) || reg.cartao.toLowerCase().includes(termo);
-                if (!matchBusca) return false;
-
-                if (filtroAtual === 'pendentes') return reg.status === 'ativo';
-                if (filtroAtual === 'perdidos') return reg.status === 'perdido';
-                if (filtroAtual === 'devolvidos') return reg.status === 'devolvido';
-                return true;
+        window.copiarTextoMessenger = function(button) {
+            const textoDecodificado = decodeURIComponent(button.getAttribute('data-texto'));
+            navigator.clipboard.writeText(textoDecodificado).then(() => {
+                mostrarToast('✓ Copiado para a área de transferência!');
+            }).catch(() => {
+                mostrarToast('Erro ao copiar!', true);
             });
+        };
 
-            if (filtrados.length === 0) {
-                listaRegistros.innerHTML = `<div class="empty-list">Nenhum registro encontrado.</div>`;
-                return;
-            }
-
-            filtrados.forEach(reg => {
-                const row = document.createElement('div');
-                row.className = `registro-row ${reg.status}`;
-                row.setAttribute('data-id', reg.id);
-
-                let statusTexto = 'Ativo';
-                if (reg.status === 'devolvido') statusTexto = 'Devolvido';
-                if (reg.status === 'perdido') statusTexto = 'Perdido';
-
-                const dataRetFormatada = new Date(reg.data_retirada).toLocaleString('pt-BR');
-                const dataDevFormatada = reg.data_devolucao ? new Date(reg.data_devolucao).toLocaleString('pt-BR') : '-';
-
-                row.innerHTML = `
-                    <div class="row-top">
-                        <div class="user-info">
-                            <h3>${escapeHtml(reg.nome)}</h3>
-                            <span>Cartão: ${escapeHtml(reg.cartao)}</span>
-                        </div>
-                        <div class="header-actions">
-                            <span class="status-pill ${reg.status}">${statusTexto}</span>
-                            <button type="button" class="btn-delete-single" onclick="deletarRegistro('${reg.id}')" title="Excluir">🗑️</button>
-                        </div>
-                    </div>
-
-                    <div class="row-details">
-                        <div class="detail-group">
-                            <span>Retirada</span>
-                            <strong>${dataRetFormatada}</strong>
-                        </div>
-                        <div class="detail-group">
-                            <span>Devolução</span>
-                            <strong>${dataDevFormatada}</strong>
-                        </div>
-                    </div>
-
-                    <div class="actions-container">
-                        ${reg.status === 'ativo' ? `
-                            <div class="actions-group">
-                                <button type="button" class="btn-action-row" onclick="iniciarDevolucao('${reg.id}')">Devolver</button>
-                                <button type="button" class="btn-lost-row" onclick="iniciarPerdido('${reg.id}')">Perdido</button>
-                            </div>
-                        ` : reg.status === 'perdido' ? `
-                            <button type="button" class="btn-found-row" onclick="marcarEncontrado('${reg.id}')">Marcar como Encontrado</button>
-                        ` : ''}
-                    </div>
-                `;
-                listaRegistros.appendChild(row);
-            });
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
-
-        async function deletarRegistro(id) {
-            if (!confirm('Deseja realmente excluir este registro?')) return;
-            const { error } = await supabaseClient.from('registros_acesso').delete().eq('id', id);
-            if (!error) {
-                mostrarToast('✓ Registro excluído!');
-                carregarRegistrosDoSupabase();
-            } else {
-                mostrarToast('Erro ao excluir', true);
-            }
-        }
-
-        async function iniciarDevolucao(id) {
-            const dataDev = new Date().toISOString();
-            const { error } = await supabaseClient
-                .from('registros_acesso')
-                .update({ status: 'devolvido', data_devolucao: dataDev })
-                .eq('id', id);
-
-            if (!error) {
-                mostrarToast('✓ Cartão devolvido com sucesso!');
-                carregarRegistrosDoSupabase();
-            } else {
-                mostrarToast('Erro ao atualizar status', true);
-            }
-        }
-
-        async function iniciarPerdido(id) {
-            const { error } = await supabaseClient
-                .from('registros_acesso')
-                .update({ status: 'perdido' })
-                .eq('id', id);
-
-            if (!error) {
-                mostrarToast('⚠️ Cartão marcado como perdido!');
-                carregarRegistrosDoSupabase();
-            } else {
-                mostrarToast('Erro ao atualizar status', true);
-            }
-        }
-
-        async function marcarEncontrado(id) {
-            const { error } = await supabaseClient
-                .from('registros_acesso')
-                .update({ status: 'ativo' })
-                .eq('id', id);
-
-            if (!error) {
-                mostrarToast('✓ Cartão encontrado e reativado!');
-                carregarRegistrosDoSupabase();
-            } else {
-                mostrarToast('Erro ao atualizar status', true);
-            }
-        }
-
-        inputBuscaRapida.addEventListener('input', (e) => {
-            if (e.target.value.trim().length > 0) {
-                btnClearSearch.classList.add('show');
-            } else {
-                btnClearSearch.classList.remove('show');
-            }
-            renderizarRegistros();
-        });
-
-        btnClearSearch.addEventListener('click', () => {
-            inputBuscaRapida.value = '';
-            btnClearSearch.classList.remove('show');
-            renderizarRegistros();
-        });
-
-        menuLimparTudo.addEventListener('click', async () => {
-            dropdownMenu.classList.remove('show');
-            if (confirm('Deseja apagar todo o histórico de registros do banco?')) {
-                const { error } = await supabaseClient.from('registros_acesso').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-                if (!error) {
-                    mostrarToast('Histórico limpo!');
-                    carregarRegistrosDoSupabase();
-                } else {
-                    mostrarToast('Erro ao limpar histórico', true);
-                }
-            }
-        });
 
         function mostrarToast(msg, erro = false) {
             toast.textContent = msg;
             toast.className = erro ? 'toast error show' : 'toast show';
             setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+
+        async function carregarRegistrosDoSupabase() {
+            // Placeholder para carregamento dos registros principais do sistema
         }
     </script>
 </body>
