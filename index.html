@@ -1,303 +1,48 @@
-btnCloseMessenger.addEventListener('click', () => {
-            messengerModal.classList.remove('show');
-        });
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integração Supabase</title>
+    
+    <!-- 1. Importação da biblioteca oficial do Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
 
-        messengerInput.addEventListener('input', () => {
-            charCounter.textContent = `${messengerInput.value.length} caracteres`;
-        });
+    <h1>Meu Projeto com Supabase</h1>
+    <p>Abra o console do navegador (F12) para ver os resultados da conexão.</p>
 
-        messengerForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const texto = messengerInput.value.trim();
-            if (!texto) return;
+    <script>
+        // 2. Credenciais do seu projeto
+        const SUPABASE_URL = 'https://djgwbjieslxqvhatfirc.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_hv5R2009VodI3IYGu4mv_g_mOWmZVvp';
 
-            const { error } = await supabaseClient
-                .from('mensagens_messenger')
-                .insert([{ texto }]);
+        // 3. Inicialização do cliente Supabase
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            if (error) {
-                mostrarToast('Erro ao enviar código!', true);
-            } else {
-                mostrarToast('✓ Código enviado com sucesso!');
-                messengerInput.value = '';
-                charCounter.textContent = '0 caracteres';
-                carregarMensagensMessenger();
-            }
-        });
+        // Exemplo de função para testar a conexão buscando dados de uma tabela
+        // (Substitua 'sua_tabela' pelo nome real de uma tabela que você criou no Supabase)
+        async function testarConexao() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('sua_tabela')
+                    .select('*')
+                    .limit(5);
 
-        async function carregarMensagensMessenger() {
-            messengerChatList.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px;">Carregando códigos...</div>';
-            
-            const { data, error } = await supabaseClient
-                .from('mensagens_messenger')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                messengerChatList.innerHTML = '<div style="text-align:center; color:var(--danger); padding:20px;">Erro ao carregar dados.</div>';
-                return;
-            }
-
-            if (!data || data.length === 0) {
-                messengerChatList.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px;">Nenhum código registrado.</div>';
-                return;
-            }
-
-            messengerChatList.innerHTML = '';
-            data.forEach(item => {
-                const div = document.createElement('div');
-                div.style.cssText = 'background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px;';
-                
-                const dataFormatada = new Date(item.created_at).toLocaleString('pt-BR');
-                
-                div.innerHTML = `
-                    <div style="font-size: 0.75rem; color: var(--text-muted);">${dataFormatada}</div>
-                    <div style="font-family: monospace; font-size: 0.85rem; white-space: pre-wrap; word-break: break-all; color: var(--text-main);">${escapeHtml(item.texto)}</div>
-                `;
-                messengerChatList.appendChild(div);
-            });
-        }
-
-        function escapeHtml(text) {
-            const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            };
-            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-        }
-
-        // Funções principais do painel (Supabase e Histórico)
-        async function carregarRegistrosDoSupabase() {
-            const { data, error } = await supabaseClient
-                .from('registros_acesso')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                mostrarToast('Erro ao sincronizar dados!', true);
-                return;
-            }
-
-            registros = data || [];
-            renderizarRegistros();
-        }
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const nome = inputNome.value.trim();
-            const cartao = inputCartao.value.trim();
-
-            if (!nome || !cartao) return;
-
-            const novoRegistro = {
-                nome: nome,
-                cartao: cartao,
-                status: 'ativo',
-                created_at: new Date().toISOString()
-            };
-
-            const { error } = await supabaseClient
-                .from('registros_acesso')
-                .insert([novoRegistro]);
-
-            if (error) {
-                mostrarToast('Erro ao registrar retirada!', true);
-                return;
-            }
-
-            mostrarToast('✓ Retirada registrada com sucesso!');
-            inputNome.value = '';
-            inputCartao.value = '';
-            cartaoAvisoInput.classList.remove('show');
-            carregarRegistrosDoSupabase();
-        });
-
-        btnVerRegistros.addEventListener('click', () => {
-            cadastroView.classList.add('hidden');
-            registrosView.classList.remove('hidden');
-            btnVoltarCadastro.classList.remove('hidden');
-        });
-
-        btnVoltarCadastro.addEventListener('click', () => {
-            registrosView.classList.add('hidden');
-            cadastroView.classList.remove('hidden');
-            btnVoltarCadastro.classList.add('hidden');
-        });
-
-        function renderizarRegistros() {
-            let filtrados = registros;
-            
-            if (filtroAtual === 'pendentes') {
-                filtrados = registros.filter(r => r.status === 'ativo');
-            } else if (filtroAtual === 'perdidos') {
-                filtrados = registros.filter(r => r.status === 'perdido');
-            } else if (filtroAtual === 'devolvidos') {
-                filtrados = registros.filter(r => r.status === 'devolvido');
-            }
-
-            const termoBusca = inputBuscaRapida.value.toLowerCase();
-            if (termoBusca) {
-                filtrados = filtrados.filter(r => 
-                    r.nome.toLowerCase().includes(termoBusca) || 
-                    r.cartao.toLowerCase().includes(termoBusca)
-                );
-            }
-
-            if (filtrados.length === 0) {
-                listaRegistros.innerHTML = '<div class="empty-list">Nenhum registro encontrado.</div>';
-                return;
-            }
-
-            listaRegistros.innerHTML = '';
-            filtrados.forEach(reg => {
-                const row = document.createElement('div');
-                row.className = `registro-row ${reg.status}`;
-                
-                let statusClass = 'ativo';
-                let statusText = 'Ativo';
-                if (reg.status === 'devolvido') {
-                    statusClass = 'devolvido';
-                    statusText = 'Devolvido';
-                } else if (reg.status === 'perdido') {
-                    statusClass = 'perdido';
-                    statusText = 'Perdido';
+                if (error) {
+                    console.error('Erro ao buscar dados:', error.message);
+                } else {
+                    console.log('Dados recebidos com sucesso:', data);
                 }
-
-                const dataRetirada = new Date(reg.created_at).toLocaleString('pt-BR');
-
-                row.innerHTML = `
-                    <div class="row-top">
-                        <div class="user-info">
-                            <h3>${escapeHtml(reg.nome)}</h3>
-                            <span>Cartão: ${escapeHtml(reg.cartao)}</span>
-                        </div>
-                        <div class="header-actions">
-                            <span class="status-pill ${statusClass}">${statusText}</span>
-                            <button type="button" class="btn-delete-single" onclick="deletarRegistro('${reg.id}')" title="Excluir">🗑️</button>
-                        </div>
-                    </div>
-                    <div class="row-details">
-                        <div class="detail-group">
-                            <span>Retirada</span>
-                            <strong>${dataRetirada}</strong>
-                        </div>
-                        <div class="detail-group">
-                            <span>Status Atual</span>
-                            <strong>${statusText}</strong>
-                        </div>
-                    </div>
-                    <div class="actions-group">
-                        ${reg.status === 'ativo' ? `
-                            <button type="button" class="btn-lost-row" onclick="alterarStatus('${reg.id}', 'perdido')">⚠️ Marcar Perdido</button>
-                            <button type="button" class="btn-action-row" onclick="alterarStatus('${reg.id}', 'devolvido')">✅ Devolver</button>
-                        ` : reg.status === 'perdido' ? `
-                            <button type="button" class="btn-found-row" onclick="alterarStatus('${reg.id}', 'ativo')">🔄 Encontrado / Reativar</button>
-                        ` : `
-                            <button type="button" class="btn-found-row" onclick="alterarStatus('${reg.id}', 'ativo')">🔄 Reabrir Retirada</button>
-                        `}
-                    </div>
-                `;
-                listaRegistros.appendChild(row);
-            });
+            } catch (err) {
+                console.error('Erro inesperado:', err);
+            }
         }
 
-        window.alterarStatus = async function(id, novoStatus) {
-            const { error } = await supabaseClient
-                .from('registros_acesso')
-                .update({ status: novoStatus })
-                .eq('id', id);
-
-            if (error) {
-                mostrarToast('Erro ao atualizar status!', true);
-            } else {
-                mostrarToast('✓ Status atualizado!');
-                carregarRegistrosDoSupabase();
-            }
-        };
-
-        window.deletarRegistro = async function(id) {
-            if (!confirm('Deseja realmente excluir este registro?')) return;
-
-            const { error } = await supabaseClient
-                .from('registros_acesso')
-                .delete()
-                .eq('id', id);
-
-            if (error) {
-                mostrarToast('Erro ao excluir registro!', true);
-            } else {
-                mostrarToast('✓ Registro excluído!');
-                carregarRegistrosDoSupabase();
-            }
-        };
-
-        inputBuscaRapida.addEventListener('input', () => {
-            btnClearSearch.classList.toggle('show', inputBuscaRapida.value.length > 0);
-            renderizarRegistros();
-        });
-
-        btnClearSearch.addEventListener('click', () => {
-            inputBuscaRapida.value = '';
-            btnClearSearch.classList.remove('show');
-            renderizarRegistros();
-        });
-
-        btnMenuFiltrar.addEventListener('click', (e) => {
-            e.stopPropagation();
-            filterSubmenu.classList.toggle('show');
-        });
-
-        filterOptions.forEach(opt => {
-            opt.addEventListener('click', () => {
-                filterOptions.forEach(o => o.classList.remove('active'));
-                opt.classList.add('active');
-                filtroAtual = opt.getAttribute('data-filtro');
-                filterSubmenu.classList.remove('show');
-                dropdownMenu.classList.remove('show');
-                renderizarRegistros();
-            });
-        });
-
-        menuLimparTudo.addEventListener('click', async () => {
-            dropdownMenu.classList.remove('show');
-            if (!confirm('Tem certeza que deseja apagar todo o histórico do banco de dados?')) return;
-
-            const { error } = await supabaseClient
-                .from('registros_acesso')
-                .delete()
-                .neq('id', 0); // Deleta todos
-
-            if (error) {
-                mostrarToast('Erro ao limpar histórico!', true);
-            } else {
-                mostrarToast('✓ Histórico limpo com sucesso!');
-                carregarRegistrosDoSupabase();
-            }
-        });
-
-        menuWhatsapp.addEventListener('click', () => {
-            dropdownMenu.classList.remove('show');
-            const ativos = registros.filter(r => r.status === 'ativo');
-            if (ativos.length === 0) {
-                mostrarToast('Nenhum ativo pendente para enviar.', true);
-                return;
-            }
-
-            let texto = '📋 *Relatório de Cartões Pendentes*\n\n';
-            ativos.forEach((r, index) => {
-                texto += `${index + 1}. *${r.nome}* - Cartão: \`${r.cartao}\`\n`;
-            });
-
-            const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
-            window.open(url, '_blank');
-        });
-
-        window.addEventListener('online', () => offlineBanner.classList.remove('show'));
-        window.addEventListener('offline', () => offlineBanner.classList.add('show'));
-        if (!navigator.onLine) offlineBanner.classList.add('show');
+        // Executa o teste ao carregar a página
+        testarConexao();
     </script>
+
 </body>
 </html>
