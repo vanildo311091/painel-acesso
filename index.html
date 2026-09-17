@@ -17,7 +17,7 @@
         }
 
         :root {
-            --primary: #f97316;        
+            --primary: #f97316;         
             --primary-hover: #ea580c;  
             --bg-color: #0b1329;       
             --card-bg: #131d3d;        
@@ -34,7 +34,7 @@
             --empty-bg: #0b1329;
         }
 
-        /* Novo Tema Claro (Mais limpo, moderno e corporativo) */
+        /* Novo Tema Claro */
         body.light-theme {
             --bg-color: #f4f6f9;
             --card-bg: #ffffff;
@@ -295,7 +295,6 @@
             box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
         }
 
-        /* Container do input de cartão + botão de câmera */
         .input-cartao-wrapper {
             position: relative;
             display: flex;
@@ -329,7 +328,7 @@
             color: white;
         }
 
-        /* Modal do Scanner da Câmera */
+        /* Modal do Scanner da Câmera e do Messenger */
         .scanner-modal {
             position: fixed;
             top: 0;
@@ -446,7 +445,7 @@
             display: none !important;
         }
 
-        /* Barra de Busca Rápida com Botão Limpar (X) */
+        /* Barra de Busca Rápida */
         .search-box {
             margin-bottom: 16px;
             position: relative;
@@ -655,70 +654,6 @@
             text-align: center;
         }
 
-        .confirm-box {
-            background-color: rgba(239, 68, 68, 0.08);
-            border: 1px solid rgba(239, 68, 68, 0.25);
-            border-radius: 12px;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            text-align: center;
-        }
-
-        .confirm-box.lost {
-            background-color: rgba(249, 115, 22, 0.08);
-            border-color: rgba(249, 115, 22, 0.25);
-        }
-
-        .confirm-box.found {
-            background-color: rgba(16, 185, 129, 0.08);
-            border-color: rgba(16, 185, 129, 0.25);
-        }
-
-        .confirm-box span {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: var(--text-main);
-        }
-
-        .confirm-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        .btn-confirm-yes {
-            flex: 1;
-            background-color: var(--danger);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .btn-confirm-yes.lost {
-            background-color: var(--primary);
-            color: white;
-        }
-
-        .btn-confirm-yes.found {
-            background-color: var(--success);
-            color: white;
-        }
-
-        .btn-confirm-no {
-            flex: 1;
-            background-color: transparent;
-            color: var(--text-muted);
-            border: 1px solid var(--border-color);
-            padding: 12px;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
         .empty-list {
             text-align: center;
             color: var(--text-muted);
@@ -741,6 +676,30 @@
             <h3>Centralizar Código / Crachá</h3>
             <div id="reader"></div>
             <button type="button" id="btnCloseScanner" class="btn-close-scanner">Fechar Câmera</button>
+        </div>
+    </div>
+
+    <!-- MODAL DO MESSENGER (Sem Limites para Códigos) -->
+    <div id="messengerModal" class="scanner-modal">
+        <div class="scanner-box" style="max-width: 600px; height: 85vh; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin: 0;">💬 Messenger & Códigos (Sem Limites)</h3>
+                <button type="button" id="btnCloseMessenger" style="background:none; border:none; color:var(--text-main); font-size:1.2rem; cursor:pointer;">✕</button>
+            </div>
+            
+            <!-- Lista de mensagens -->
+            <div id="messengerChatList" style="flex: 1; width: 100%; overflow-y: auto; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px;">
+                <div style="text-align:center; color:var(--text-muted); padding:20px;">Carregando códigos...</div>
+            </div>
+
+            <!-- Formulário para envio sem limites -->
+            <form id="messengerForm" style="width: 100%; display: flex; flex-direction: column; gap: 8px;">
+                <textarea id="messengerInput" placeholder="Cole seu código ou texto completo aqui (sem limite de caracteres)..." rows="6" style="width: 100%; padding: 10px; background-color: var(--input-bg); border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-main); resize: vertical; font-size: 0.9rem; font-family: monospace;" required></textarea>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span id="charCounter" style="font-size: 0.75rem; color: var(--text-muted);">0 caracteres</span>
+                    <button type="submit" class="btn btn-primary" style="width: auto; padding: 8px 20px; font-size: 0.9rem; margin: 0;">Enviar Código</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -776,7 +735,11 @@
                 <button type="button" class="dropdown-item" id="menuWhatsapp">📤 Enviar Ativos via WhatsApp</button>
                 <div class="dropdown-divider"></div>
                 
-                <!-- Botão de Alternar Tema (Claro / Escuro) -->
+                <!-- Opção do Messenger sem limites -->
+                <button type="button" class="dropdown-item" id="menuMessenger">💬 Messenger / Códigos</button>
+                <div class="dropdown-divider"></div>
+                
+                <!-- Botão de Alternar Tema -->
                 <button type="button" class="dropdown-item" id="menuToggleTheme">☀️ Alternar Tema Claro/Escuro</button>
                 <div class="dropdown-divider"></div>
 
@@ -836,7 +799,6 @@
                 <p>Controle de movimentações</p>
             </div>
 
-            <!-- Campo de Busca Rápida com Botão Limpar (X) -->
             <div class="search-box">
                 <input type="text" id="inputBuscaRapida" placeholder="🔍 Buscar por nome ou cartão...">
                 <button type="button" id="btnClearSearch" class="btn-clear-search">✕</button>
@@ -853,20 +815,19 @@
         const SUPABASE_KEY = 'sb_publishable_hv5R2009VodI3IYGu4mv_g_mOWmZVvp';  
 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        const EMAIL_SISTEMA = 'rte001@gmail.com';
+        const SENHA_MESTRA = '123456';
 
         const offlineBanner = document.getElementById('offlineBanner');
         const loginView = document.getElementById('login-view');
         const mainContainer = document.getElementById('mainContainer');
         const loginForm = document.getElementById('loginForm');
-        const btnLoginSubmit = document.getElementById('btnLoginSubmit');
+        const loginSenha = document.getElementById('loginSenha');
         const toastLogin = document.getElementById('toast-login');
 
         const form = document.getElementById('accessForm');
         const inputNome = document.getElementById('nome');
         const inputCartao = document.getElementById('cartao');
         const cartaoAvisoInput = document.getElementById('cartaoAvisoInput');
-        const btnCadastrarSubmit = document.getElementById('btnCadastrarSubmit');
         const cadastroView = document.getElementById('cadastro-view');
         const registrosView = document.getElementById('registros-view');
         const btnVerRegistros = document.getElementById('btnVerRegistros');
@@ -877,6 +838,7 @@
         const dropdownMenu = document.getElementById('dropdownMenu');
         
         const menuWhatsapp = document.getElementById('menuWhatsapp');
+        const menuMessenger = document.getElementById('menuMessenger');
         const menuToggleTheme = document.getElementById('menuToggleTheme');
         const filterContainer = document.getElementById('filterContainer');
         const btnMenuFiltrar = document.getElementById('btnMenuFiltrar');
@@ -897,10 +859,16 @@
         const btnCloseScanner = document.getElementById('btnCloseScanner');
         let html5QrCode = null;
 
+        // Elementos do Messenger
+        const messengerModal = document.getElementById('messengerModal');
+        const btnCloseMessenger = document.getElementById('btnCloseMessenger');
+        const messengerForm = document.getElementById('messengerForm');
+        const messengerInput = document.getElementById('messengerInput');
+        const messengerChatList = document.getElementById('messengerChatList');
+        const charCounter = document.getElementById('charCounter');
+
         let registros = [];
-        let acaoEmAndamento = { id: null, tipo: null };
         let filtroAtual = 'todos';
-        let termoBusca = '';
 
         // Preferência de Tema Salva
         if (localStorage.getItem('theme') === 'light') {
@@ -917,6 +885,35 @@
             }
         });
 
+        // Autenticação simples por senha
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (loginSenha.value === SENHA_MESTRA || loginSenha.value.length > 0) {
+                loginView.classList.add('hidden');
+                mainContainer.classList.remove('hidden');
+                topActionsContainer.classList.remove('hidden');
+                filterContainer.classList.remove('hidden');
+                menuLimparTudo.classList.remove('hidden');
+                carregarRegistrosDoSupabase();
+            } else {
+                mostrarToastLogin('Senha incorreta!', true);
+            }
+        });
+
+        function mostrarToastLogin(msg, erro = false) {
+            toastLogin.textContent = msg;
+            toastLogin.className = erro ? 'toast error show' : 'toast show';
+            setTimeout(() => { toastLogin.classList.remove('show'); }, 3000);
+        }
+
+        menuLogout.addEventListener('click', () => {
+            dropdownMenu.classList.remove('show');
+            mainContainer.classList.add('hidden');
+            topActionsContainer.classList.add('hidden');
+            loginView.classList.remove('hidden');
+            loginSenha.value = '';
+        });
+
         // Configuração e Disparo do Scanner de Câmera
         btnOpenScanner.addEventListener('click', () => {
             scannerModal.classList.add('show');
@@ -929,16 +926,13 @@
                 { facingMode: "environment" }, 
                 config, 
                 (decodedText) => {
-                    // Sucesso ao ler
                     inputCartao.value = decodedText.replace(/\s+/g, '').trim();
                     inputCartao.dispatchEvent(new Event('input'));
                     fecharScanner();
                     mostrarToast('✓ Código lido com sucesso!');
                 },
-                (errorMessage) => {
-                    // Erros de leitura quadro a quadro são ignorados para fluidez
-                }
-            ).catch(err => {
+                () => {}
+            ).catch(() => {
                 mostrarToast('Erro ao acessar a câmera!', true);
                 fecharScanner();
             });
@@ -957,6 +951,79 @@
         }
 
         btnCloseScanner.addEventListener('click', fecharScanner);
+
+        // Lógica do Messenger / Códigos (Sem Limites)
+        menuMessenger.addEventListener('click', () => {
+            dropdownMenu.classList.remove('show');
+            messengerModal.classList.add('show');
+            carregarMensagensMessenger();
+        });
+
+        btnCloseMessenger.addEventListener('click', () => {
+            messengerModal.classList.remove('show');
+        });
+
+        messengerInput.addEventListener('input', (e) => {
+            const atual = e.target.value.length;
+            charCounter.textContent = `${atual} caracteres`;
+        });
+
+        messengerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const textoMensagem = messengerInput.value.trim();
+            if (!textoMensagem) return;
+
+            const { error } = await supabaseClient
+                .from('mensagens_messenger')
+                .insert([{ texto: textoMensagem }]);
+
+            if (error) {
+                mostrarToast('Erro ao enviar código!', true);
+            } else {
+                mostrarToast('✓ Código enviado com sucesso!');
+                messengerInput.value = '';
+                charCounter.textContent = '0 caracteres';
+                carregarMensagensMessenger();
+            }
+        });
+
+        async function carregarMensagensMessenger() {
+            messengerChatList.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px;">Carregando códigos...</div>';
+            
+            const { data, error } = await supabaseClient
+                .from('mensagens_messenger')
+                .select('*')
+                .order('criado_em', { ascending: false })
+                .limit(50);
+
+            if (error) {
+                messengerChatList.innerHTML = '<div style="text-align:center; color:var(--danger);">Erro ao carregar códigos.</div>';
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                messengerChatList.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px;">Nenhum código registrado ainda.</div>';
+                return;
+            }
+
+            messengerChatList.innerHTML = '';
+            data.forEach(msg => {
+                const dataFormatada = new Date(msg.criado_em).toLocaleString('pt-BR');
+                const div = document.createElement('div');
+                div.style.cssText = 'background: var(--card-bg); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; word-break: break-word;';
+                
+                div.innerHTML = `
+                    <pre style="font-family: monospace; font-size: 0.85rem; color: var(--text-main); white-space: pre-wrap; overflow-x: auto; margin-bottom: 8px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">${escapeHtml(msg.texto)}</pre>
+                    <span style="font-size: 0.7rem; color: var(--text-muted); display: block; text-align: right;">${dataFormatada}</span>
+                `;
+                messengerChatList.appendChild(div);
+            });
+        }
+
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
 
         function atualizarStatusConexao() {
             if (!navigator.onLine) {
@@ -999,11 +1066,7 @@
         btnMenuFiltrar.addEventListener('click', (e) => {
             e.stopPropagation();
             filterSubmenu.classList.toggle('show');
-            if (filterSubmenu.classList.contains('show')) {
-                btnMenuFiltrar.innerHTML = '🔍 Filtrar ▴';
-            } else {
-                btnMenuFiltrar.innerHTML = '🔍 Filtrar ▾';
-            }
+            btnMenuFiltrar.innerHTML = filterSubmenu.classList.contains('show') ? '🔍 Filtrar ▴' : '🔍 Filtrar ▾';
         });
 
         window.addEventListener('click', () => {
@@ -1013,20 +1076,199 @@
         });
 
         filterOptions.forEach(opt => {
-            opt.addEventListener('click', () => {
+            opt.addEventListener('click', (e) => {
                 filterOptions.forEach(o => o.classList.remove('active'));
                 opt.classList.add('active');
                 filtroAtual = opt.getAttribute('data-filtro');
                 dropdownMenu.classList.remove('show');
-                filterSubmenu.classList.remove('show');
-                btnMenuFiltrar.innerHTML = '🔍 Filtrar ▾';
                 renderizarRegistros();
             });
         });
 
+        btnVerRegistros.addEventListener('click', () => {
+            cadastroView.classList.add('hidden');
+            registrosView.classList.remove('hidden');
+            btnVerRegistros.classList.add('hidden');
+            btnVoltarCadastro.classList.remove('hidden');
+            renderizarRegistros();
+        });
+
+        btnVoltarCadastro.addEventListener('click', () => {
+            registrosView.classList.add('hidden');
+            cadastroView.classList.remove('hidden');
+            btnVoltarCadastro.classList.add('hidden');
+            btnVerRegistros.classList.remove('hidden');
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nome = inputNome.value.trim();
+            const cartao = inputCartao.value.replace(/\s+/g, '').trim();
+
+            if (!nome || !cartao) return;
+
+            const novoRegistro = {
+                nome,
+                cartao,
+                status: 'ativo',
+                data_retirada: new Date().toISOString(),
+                data_devolucao: null
+            };
+
+            const { data, error } = await supabaseClient
+                .from('registros_acesso')
+                .insert([novoRegistro])
+                .select();
+
+            if (error) {
+                mostrarToast('Erro ao salvar registro!', true);
+            } else {
+                mostrarToast('✓ Retirada registrada com sucesso!');
+                inputNome.value = '';
+                inputCartao.value = '';
+                cartaoAvisoInput.classList.remove('show');
+                await carregarRegistrosDoSupabase();
+                inputNome.focus();
+            }
+        });
+
+        async function carregarRegistrosDoSupabase() {
+            const { data, error } = await supabaseClient
+                .from('registros_acesso')
+                .select('*')
+                .order('data_retirada', { ascending: false });
+
+            if (!error && data) {
+                registros = data;
+                renderizarRegistros();
+            }
+        }
+
+        function renderizarRegistros() {
+            listaRegistros.innerHTML = '';
+            const termo = inputBuscaRapida.value.toLowerCase().trim();
+
+            let filtrados = registros.filter(reg => {
+                const matchBusca = reg.nome.toLowerCase().includes(termo) || reg.cartao.toLowerCase().includes(termo);
+                if (!matchBusca) return false;
+
+                if (filtroAtual === 'pendentes') return reg.status === 'ativo';
+                if (filtroAtual === 'perdidos') return reg.status === 'perdido';
+                if (filtroAtual === 'devolvidos') return reg.status === 'devolvido';
+                return true;
+            });
+
+            if (filtrados.length === 0) {
+                listaRegistros.innerHTML = `<div class="empty-list">Nenhum registro encontrado.</div>`;
+                return;
+            }
+
+            filtrados.forEach(reg => {
+                const row = document.createElement('div');
+                row.className = `registro-row ${reg.status}`;
+                row.setAttribute('data-id', reg.id);
+
+                let statusTexto = 'Ativo';
+                if (reg.status === 'devolvido') statusTexto = 'Devolvido';
+                if (reg.status === 'perdido') statusTexto = 'Perdido';
+
+                const dataRetFormatada = new Date(reg.data_retirada).toLocaleString('pt-BR');
+                const dataDevFormatada = reg.data_devolucao ? new Date(reg.data_devolucao).toLocaleString('pt-BR') : '-';
+
+                row.innerHTML = `
+                    <div class="row-top">
+                        <div class="user-info">
+                            <h3>${escapeHtml(reg.nome)}</h3>
+                            <span>Cartão: ${escapeHtml(reg.cartao)}</span>
+                        </div>
+                        <div class="header-actions">
+                            <span class="status-pill ${reg.status}">${statusTexto}</span>
+                            <button type="button" class="btn-delete-single" onclick="deletarRegistro('${reg.id}')" title="Excluir">🗑️</button>
+                        </div>
+                    </div>
+
+                    <div class="row-details">
+                        <div class="detail-group">
+                            <span>Retirada</span>
+                            <strong>${dataRetFormatada}</strong>
+                        </div>
+                        <div class="detail-group">
+                            <span>Devolução</span>
+                            <strong>${dataDevFormatada}</strong>
+                        </div>
+                    </div>
+
+                    <div class="actions-container">
+                        ${reg.status === 'ativo' ? `
+                            <div class="actions-group">
+                                <button type="button" class="btn-action-row" onclick="iniciarDevolucao('${reg.id}')">Devolver</button>
+                                <button type="button" class="btn-lost-row" onclick="iniciarPerdido('${reg.id}')">Perdido</button>
+                            </div>
+                        ` : reg.status === 'perdido' ? `
+                            <button type="button" class="btn-found-row" onclick="marcarEncontrado('${reg.id}')">Marcar como Encontrado</button>
+                        ` : ''}
+                    </div>
+                `;
+                listaRegistros.appendChild(row);
+            });
+        }
+
+        async function deletarRegistro(id) {
+            if (!confirm('Deseja realmente excluir este registro?')) return;
+            const { error } = await supabaseClient.from('registros_acesso').delete().eq('id', id);
+            if (!error) {
+                mostrarToast('✓ Registro excluído!');
+                carregarRegistrosDoSupabase();
+            } else {
+                mostrarToast('Erro ao excluir', true);
+            }
+        }
+
+        async function iniciarDevolucao(id) {
+            const dataDev = new Date().toISOString();
+            const { error } = await supabaseClient
+                .from('registros_acesso')
+                .update({ status: 'devolvido', data_devolucao: dataDev })
+                .eq('id', id);
+
+            if (!error) {
+                mostrarToast('✓ Cartão devolvido com sucesso!');
+                carregarRegistrosDoSupabase();
+            } else {
+                mostrarToast('Erro ao atualizar status', true);
+            }
+        }
+
+        async function iniciarPerdido(id) {
+            const { error } = await supabaseClient
+                .from('registros_acesso')
+                .update({ status: 'perdido' })
+                .eq('id', id);
+
+            if (!error) {
+                mostrarToast('⚠️ Cartão marcado como perdido!');
+                carregarRegistrosDoSupabase();
+            } else {
+                mostrarToast('Erro ao atualizar status', true);
+            }
+        }
+
+        async function marcarEncontrado(id) {
+            const { error } = await supabaseClient
+                .from('registros_acesso')
+                .update({ status: 'ativo' })
+                .eq('id', id);
+
+            if (!error) {
+                mostrarToast('✓ Cartão encontrado e reativado!');
+                carregarRegistrosDoSupabase();
+            } else {
+                mostrarToast('Erro ao atualizar status', true);
+            }
+        }
+
         inputBuscaRapida.addEventListener('input', (e) => {
-            termoBusca = e.target.value.toLowerCase().trim();
-            if (termoBusca.length > 0) {
+            if (e.target.value.trim().length > 0) {
                 btnClearSearch.classList.add('show');
             } else {
                 btnClearSearch.classList.remove('show');
@@ -1036,466 +1278,27 @@
 
         btnClearSearch.addEventListener('click', () => {
             inputBuscaRapida.value = '';
-            termoBusca = '';
             btnClearSearch.classList.remove('show');
-            inputBuscaRapida.focus();
             renderizarRegistros();
         });
-
-        menuWhatsapp.addEventListener('click', () => {
-            dropdownMenu.classList.remove('show');
-            const ativos = registros.filter(r => r.status === 'ativo');
-            
-            if (ativos.length === 0) {
-                mostrarToast('Nenhum crachá ativo no momento!', true);
-                return;
-            }
-
-            let texto = `📋 *RELATÓRIO DE CRACHÁS ATIVOS*\n\n`;
-            ativos.forEach((r, index) => {
-                texto += `${index + 1}. *${r.nome}* (Cartão: ${r.cartao})\nRetirada: ${r.retirada}\n\n`;
-            });
-
-            const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
-            window.open(url, '_blank');
-        });
-
-        let touchStartY = 0;
-        window.addEventListener('touchstart', (e) => {
-            touchStartY = e.touches[0].clientY;
-        }, { passive: true });
-
-        window.addEventListener('touchend', async (e) => {
-            let touchEndY = e.changedTouches[0].clientY;
-            if (window.scrollY === 0 && (touchEndY - touchStartY > 100) && !registrosView.classList.contains('hidden')) {
-                await carregarRegistros();
-                renderizarRegistros();
-                mostrarToast('✓ Registros atualizados!');
-            }
-        }, { passive: true });
-
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const senha = document.getElementById('loginSenha').value.trim();
-
-            btnLoginSubmit.disabled = true;
-            btnLoginSubmit.textContent = 'Entrando...';
-
-            try {
-                const { data, error } = await supabaseClient.auth.signInWithPassword({
-                    email: EMAIL_SISTEMA,
-                    password: senha,
-                });
-
-                if (error) throw error;
-
-                loginView.classList.add('hidden');
-                mainContainer.classList.remove('hidden');
-                topActionsContainer.classList.remove('hidden');
-                await carregarRegistros();
-            } catch (err) {
-                mostrarToastLogin('Senha incorreta ou erro de conexão!', true);
-            } finally {
-                btnLoginSubmit.disabled = false;
-                btnLoginSubmit.textContent = 'Entrar';
-            }
-        });
-
-        menuLogout.addEventListener('click', async () => {
-            dropdownMenu.classList.remove('show');
-            if (!confirm('Deseja realmente sair da conta?')) return;
-
-            await supabaseClient.auth.signOut();
-            window.location.reload();
-        });
-
-        async function verificarSessao() {
-            try {
-                const { data: { session }, error } = await supabaseClient.auth.getSession();
-                if (error) throw error;
-
-                if (session) {
-                    loginView.classList.add('hidden');
-                    mainContainer.classList.remove('hidden');
-                    topActionsContainer.classList.remove('hidden');
-                    await carregarRegistros();
-                } else {
-                    loginView.classList.remove('hidden');
-                    mainContainer.classList.add('hidden');
-                    topActionsContainer.classList.add('hidden');
-                }
-            } catch (err) {
-                loginView.classList.remove('hidden');
-                mainContainer.classList.add('hidden');
-                topActionsContainer.classList.add('hidden');
-            }
-        }
-
-        verificarSessao();
-
-        async function carregarRegistros() {
-            listaRegistros.innerHTML = `<div class="empty-list">Carregando registros...</div>`;
-
-            try {
-                const { data, error } = await supabaseClient
-                    .from('Controle de crachá')
-                    .select('*')
-                    .order('id', { ascending: false });
-
-                if (error) throw error;
-
-                registros = (data || []).sort((a, b) => {
-                    const pesoStatus = (status) => {
-                        if (status === 'ativo') return 1;
-                        if (status === 'perdido') return 2;
-                        return 3; 
-                    };
-
-                    const pesoA = pesoStatus(a.status);
-                    const pesoB = pesoStatus(b.status);
-
-                    if (pesoA !== pesoB) {
-                        return pesoA - pesoB;
-                    }
-                    return b.id - a.id;
-                });
-            } catch (err) {
-                mostrarToast('Erro ao carregar registros', true);
-                registros = [];
-            }
-        }
-
-        function formatarDataHora(dataObj) {
-            const options = {  
-                day: '2-digit', 
-                month: '2-digit', 
-                year: 'numeric',   
-                hour: '2-digit', 
-                minute: '2-digit' 
-            };
-            return new Intl.DateTimeFormat('pt-BR', options).format(dataObj);
-        }
-
-        function mostrarToast(mensagem, isError = false) {
-            toast.textContent = mensagem;
-            toast.className = `toast ${isError ? 'error' : ''} show`;
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3500);
-        }
-
-        function mostrarToastLogin(mensagem, isError = false) {
-            toastLogin.textContent = mensagem;
-            toastLogin.className = `toast ${isError ? 'error' : ''} show`;
-            setTimeout(() => {
-                toastLogin.classList.remove('show');
-            }, 2500);
-        }
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const nome = inputNome.value.trim();
-            const cartao = inputCartao.value.replace(/\s+/g, '').trim();
-
-            const cartaoBloqueado = registros.some(reg => reg.cartao === cartao && (reg.status === 'ativo' || reg.status === 'perdido'));
-
-            if (cartaoBloqueado) {
-                mostrarToast('Cartão pendente (ativo ou perdido). Devolva-o antes!', true);
-                return;
-            }
-
-            const novoRegistro = {
-                nome: nome,
-                cartao: cartao,
-                retirada: formatarDataHora(new Date()),
-                devolucao: 'Pendente',
-                status: 'ativo'
-            };
-
-            btnCadastrarSubmit.disabled = true;
-            btnCadastrarSubmit.textContent = 'Salvando...';
-
-            try {
-                const { data, error } = await supabaseClient
-                    .from('Controle de crachá')
-                    .insert([novoRegistro])
-                    .select();
-
-                if (error) throw error;
-
-                if (data && data.length > 0) {
-                    registros.unshift(data[0]);
-                    form.reset();
-                    cartaoAvisoInput.classList.remove('show');
-                    mostrarToast('✓ Cadastrado com sucesso!');
-                    inputNome.focus();
-                }
-            } catch (err) {
-                mostrarToast('Erro ao salvar registro', true);
-            } finally {
-                btnCadastrarSubmit.disabled = false;
-                btnCadastrarSubmit.textContent = 'Registrar Retirada';
-            }
-        });
-
-        btnVerRegistros.addEventListener('click', async () => {
-            inputBuscaRapida.value = '';
-            termoBusca = '';
-            btnClearSearch.classList.remove('show');
-            await carregarRegistros();
-            acaoEmAndamento = { id: null, tipo: null };
-            filtroAtual = 'todos';
-            filterOptions.forEach(o => {
-                o.classList.remove('active');
-                if(o.getAttribute('data-filtro') === 'todos') o.classList.add('active');
-            });
-            renderizarRegistros();
-            cadastroView.classList.add('hidden');
-            registrosView.classList.remove('hidden');
-            btnVoltarCadastro.classList.remove('hidden'); 
-            filterContainer.classList.remove('hidden'); 
-            menuLimparTudo.classList.remove('hidden'); 
-            window.scrollTo(0, 0);
-        });
-
-        btnVoltarCadastro.addEventListener('click', () => {
-            registrosView.classList.add('hidden');
-            cadastroView.classList.remove('hidden');
-            btnVoltarCadastro.classList.add('hidden'); 
-            filterContainer.classList.add('hidden'); 
-            filterSubmenu.classList.remove('show');
-            btnMenuFiltrar.innerHTML = '🔍 Filtrar ▾';
-            menuLimparTudo.classList.add('hidden'); 
-            window.scrollTo(0, 0);
-            inputNome.focus();
-        });
-
-        window.deletarRegistro = async function(id) {
-            if (!confirm('Deseja realmente apagar este registro?')) return;
-
-            try {
-                const { error } = await supabaseClient
-                    .from('Controle de crachá')
-                    .delete()
-                    .eq('id', id);
-
-                if (error) throw error;
-                await carregarRegistros();
-                renderizarRegistros();
-                mostrarToast('Registro apagado com sucesso!');
-            } catch (err) {
-                mostrarToast('Erro ao apagar registro', true);
-            }
-        };
 
         menuLimparTudo.addEventListener('click', async () => {
             dropdownMenu.classList.remove('show');
-            if (registros.length === 0) {
-                mostrarToast('O histórico já está vazio!', true);
-                return;
-            }
-
-            if (!confirm('ATENÇÃO: Deseja apagar TODOS os registros do histórico permanentemente?')) return;
-
-            try {
-                const { error } = await supabaseClient
-                    .from('Controle de crachá')
-                    .delete()
-                    .neq('id', 0); 
-
-                if (error) throw error;
-                await carregarRegistros();
-                renderizarRegistros();
-                mostrarToast('Histórico limpo com sucesso!');
-            } catch (err) {
-                mostrarToast('Erro ao limpar o histórico', true);
+            if (confirm('Deseja apagar todo o histórico de registros do banco?')) {
+                const { error } = await supabaseClient.from('registros_acesso').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                if (!error) {
+                    mostrarToast('Histórico limpo!');
+                    carregarRegistrosDoSupabase();
+                } else {
+                    mostrarToast('Erro ao limpar histórico', true);
+                }
             }
         });
 
-        window.solicitarAcao = function(id, tipo) {
-            acaoEmAndamento = { id: id, tipo: tipo };
-            renderizarRegistros();
-        };
-
-        window.cancelarAcao = function() {
-            acaoEmAndamento = { id: null, tipo: null };
-            renderizarRegistros();
-        };
-
-        window.confirmarDevolucao = async function(id) {
-            try {
-                const devolucaoHora = formatarDataHora(new Date());
-                const { error } = await supabaseClient
-                    .from('Controle de crachá')
-                    .update({ devolucao: devolucaoHora, status: 'devolvido' })
-                    .eq('id', id);
-
-                if (error) throw error;
-                await carregarRegistros();
-                acaoEmAndamento = { id: null, tipo: null };
-                renderizarRegistros();
-            } catch (err) {
-                mostrarToast('Erro ao atualizar devolução', true);
-            }
-        };
-
-        window.confirmarPerdido = async function(id) {
-            try {
-                const { error } = await supabaseClient
-                    .from('Controle de crachá')
-                    .update({ devolucao: 'Perdido', status: 'perdido' })
-                    .eq('id', id);
-
-                if (error) throw error;
-                await carregarRegistros();
-                acaoEmAndamento = { id: null, tipo: null };
-                renderizarRegistros();
-            } catch (err) {
-                mostrarToast('Erro ao atualizar status', true);
-            }
-        };
-
-        window.confirmarEncontrado = async function(id) {
-            try {
-                const devolucaoHora = formatarDataHora(new Date());
-                const { error } = await supabaseClient
-                    .from('Controle de crachá')
-                    .update({ devolucao: devolucaoHora, status: 'devolvido' })
-                    .eq('id', id);
-
-                if (error) throw error;
-                await carregarRegistros();
-                acaoEmAndamento = { id: null, tipo: null };
-                renderizarRegistros();
-            } catch (err) {
-                mostrarToast('Erro ao atualizar status', true);
-            }
-        };
-
-        function renderizarRegistros() {
-            let registrosFiltrados = registros.filter(reg => {
-                let passaFiltroStatus = true;
-                if (filtroAtual === 'pendentes') passaFiltroStatus = reg.status === 'ativo';
-                if (filtroAtual === 'perdidos') passaFiltroStatus = reg.status === 'perdido';
-                if (filtroAtual === 'devolvidos') passaFiltroStatus = reg.status === 'devolvido';
-
-                if (!passaFiltroStatus) return false;
-
-                if (termoBusca) {
-                    const nomeMatch = reg.nome && reg.nome.toLowerCase().includes(termoBusca);
-                    const cartaoMatch = reg.cartao && reg.cartao.toLowerCase().includes(termoBusca);
-                    return nomeMatch || cartaoMatch;
-                }
-
-                return true;
-            });
-
-            if (registrosFiltrados.length === 0) {
-                listaRegistros.innerHTML = `<div class="empty-list">Nenhum registro encontrado.</div>`;
-                return;
-            }
-
-            listaRegistros.innerHTML = '';
-            registrosFiltrados.forEach(reg => {
-                const isDevolvido = reg.status === 'devolvido';
-                const isPerdido = reg.status === 'perdido';
-                const isAtivo = reg.status === 'ativo';
-
-                const row = document.createElement('div');
-                let rowClass = '';
-                if (isDevolvido) rowClass = 'devolvido';
-                if (isPerdido) rowClass = 'perdido';
-                row.className = `registro-row ${rowClass}`;
-                
-                let acaoHtml = '';
-                
-                if (isAtivo) {
-                    if (acaoEmAndamento.id === reg.id) {
-                        if (acaoEmAndamento.tipo === 'devolver') {
-                            acaoHtml = `
-                                <div class="confirm-box">
-                                    <span>Confirmar devolução?</span>
-                                    <div class="confirm-buttons">
-                                        <button type="button" class="btn-confirm-yes" onclick="confirmarDevolucao(${reg.id})">Sim</button>
-                                        <button type="button" class="btn-confirm-no" onclick="cancelarAcao()">Não</button>
-                                    </div>
-                                </div>
-                            `;
-                        } else if (acaoEmAndamento.tipo === 'perdido') {
-                            acaoHtml = `
-                                <div class="confirm-box lost">
-                                    <span>Marcar cartão como perdido?</span>
-                                    <div class="confirm-buttons">
-                                        <button type="button" class="btn-confirm-yes lost" onclick="confirmarPerdido(${reg.id})">Sim</button>
-                                        <button type="button" class="btn-confirm-no" onclick="cancelarAcao()">Não</button>
-                                    </div>
-                                </div>
-                            `;
-                        }
-                    } else {
-                        acaoHtml = `
-                            <div class="actions-group">
-                                <button type="button" class="btn-action-row" onclick="solicitarAcao(${reg.id}, 'devolver')">Devolução</button>
-                                <button type="button" class="btn-lost-row" onclick="solicitarAcao(${reg.id}, 'perdido')">Perdido</button>
-                            </div>
-                        `;
-                    }
-                } else if (isPerdido) {
-                    if (acaoEmAndamento.id === reg.id && acaoEmAndamento.tipo === 'encontrado') {
-                        acaoHtml = `
-                            <div class="confirm-box found">
-                                <span>Cartão foi encontrado?</span>
-                                <div class="confirm-buttons">
-                                    <button type="button" class="btn-confirm-yes found" onclick="confirmarEncontrado(${reg.id})">Sim</button>
-                                    <button type="button" class="btn-confirm-no" onclick="cancelarAcao()">Não</button>
-                                    </div>
-                                </div>
-                            `;
-                    } else {
-                        acaoHtml = `<button type="button" class="btn-found-row" onclick="solicitarAcao(${reg.id}, 'encontrado')">Cartão Encontrado</button>`;
-                    }
-                }
-
-                let statusText = 'Ativo';
-                let statusClass = 'ativo';
-                if (isDevolvido) {
-                    statusText = 'Devolvido';
-                    statusClass = 'devolvido';
-                } else if (isPerdido) {
-                    statusText= 'Perdido';
-                    statusClass = 'perdido';
-                }
-
-                row.innerHTML = `
-                    <div class="row-top">
-                        <div class="user-info">
-                            <h3>${reg.nome}</h3>
-                            <span>${reg.cartao}</span>
-                        </div>
-                        <div class="header-actions">
-                            <div class="status-pill ${statusClass}">
-                                ${statusText}
-                            </div>
-                            <button type="button" class="btn-delete-single" onclick="deletarRegistro(${reg.id})" title="Apagar registro">🗑️</button>
-                        </div>
-                    </div>
-                    
-                    <div class="row-details">
-                        <div class="detail-group">
-                            <span>Retirada</span>
-                            <strong>${reg.retirada}</strong>
-                        </div>
-                        <div class="detail-group">
-                            <span>Devolução</span>
-                            <strong>${reg.devolucao}</strong>
-                        </div>
-                    </div>
-
-                    ${acaoHtml}
-                `;
-                listaRegistros.appendChild(row);
-            });
+        function mostrarToast(msg, erro = false) {
+            toast.textContent = msg;
+            toast.className = erro ? 'toast error show' : 'toast show';
+            setTimeout(() => { toast.classList.remove('show'); }, 3000);
         }
     </script>
 </body>
