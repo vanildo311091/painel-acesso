@@ -3,46 +3,1500 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Integração Supabase</title>
-    
-    <!-- 1. Importação da biblioteca oficial do Supabase -->
+    <title>Painel de Acesso & Registros</title>
+    <!-- SDK do Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Biblioteca para Leitura de QR Code / Código de Barras via Câmera -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #f97316;        
+            --primary-hover: #ea580c;  
+            --bg-color: #0b1329;       
+            --card-bg: #131d3d;        
+            --text-main: #ffffff;      
+            --text-muted: #93c5fd;     
+            --border-color: #1e3a8a;   
+            --success: #10b981;        
+            --danger: #ef4444;         
+            --warning: #f97316;        
+            --input-bg: #0b1329;
+            --details-bg: rgba(255, 255, 255, 0.02);
+            --details-border: rgba(255, 255, 255, 0.03);
+            --action-btn-bg: #1e3a8a;
+            --empty-bg: #0b1329;
+        }
+
+        /* Novo Tema Claro (Mais limpo, moderno e corporativo) */
+        body.light-theme {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --input-bg: #f8fafc;
+            --details-bg: #f1f5f9;
+            --details-border: #e2e8f0;
+            --action-btn-bg: #f1f5f9;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .mobile-container {
+            width: 100%;
+            min-height: 100vh;
+            background-color: var(--card-bg);
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: background-color 0.3s;
+        }
+
+        /* Banner de Alerta Offline */
+        .offline-banner {
+            background-color: var(--danger);
+            color: white;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 6px;
+            display: none;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1500;
+        }
+
+        .offline-banner.show {
+            display: block;
+        }
+
+        .header {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 1.6rem;
+            color: var(--text-main);
+            margin-bottom: 4px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        /* Botões de Ação Fixos no Topo (Direita) */
+        .top-actions {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            gap: 8px;
+            z-index: 1000;
+        }
+
+        .btn-floating-back {
+            background-color: var(--action-btn-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-floating-back:hover {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        /* Menu Hambúrguer */
+        .hamburger-container {
+            position: relative;
+        }
+
+        .btn-hamburger {
+            background-color: var(--action-btn-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-hamburger:hover {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 50px;
+            right: 0;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+            width: 250px;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 1100;
+        }
+
+        .dropdown-menu.show {
+            display: flex;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background-color: var(--border-color);
+            margin: 4px 0;
+        }
+
+        .filter-submenu {
+            display: none;
+            flex-direction: column;
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+
+        .filter-submenu.show {
+            display: flex;
+        }
+
+        .dropdown-item {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+            width: 100%;
+        }
+
+        .filter-submenu .dropdown-item {
+            padding-left: 24px; 
+            font-size: 0.85rem;
+        }
+
+        .dropdown-item:hover {
+            background-color: rgba(249, 115, 22, 0.1);
+            color: var(--primary);
+        }
+
+        .dropdown-item.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .dropdown-item.danger {
+            color: var(--danger);
+        }
+
+        .dropdown-item.danger:hover {
+            background-color: rgba(239, 68, 68, 0.15);
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-60px);
+            background-color: var(--success);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
+            z-index: 1200;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.error {
+            background-color: var(--danger);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 16px;
+            font-size: 1.1rem;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            color: var(--text-main);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+        }
+
+        /* Container do input de cartão + botão de câmera */
+        .input-cartao-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-cartao-wrapper input {
+            padding-right: 50px;
+        }
+
+        .btn-scan-camera {
+            position: absolute;
+            right: 8px;
+            background: var(--action-btn-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            transition: background 0.2s;
+        }
+
+        .btn-scan-camera:hover {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        /* Modal do Scanner da Câmera */
+        .scanner-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .scanner-modal.show {
+            display: flex;
+        }
+
+        .scanner-box {
+            width: 100%;
+            max-width: 400px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .scanner-box h3 {
+            margin-bottom: 12px;
+            color: var(--text-main);
+            font-size: 1.1rem;
+        }
+
+        #reader {
+            width: 100% !important;
+            border-radius: 12px;
+            overflow: hidden;
+            border: none !important;
+        }
+        
+        #reader video {
+            border-radius: 12px;
+        }
+
+        .btn-close-scanner {
+            margin-top: 16px;
+            background-color: var(--danger);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .cartao-aviso-input {
+            font-size: 0.75rem;
+            color: var(--danger);
+            margin-top: 6px;
+            font-weight: 600;
+            display: none;
+        }
+        .cartao-aviso-input.show {
+            display: block;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.35);
+            margin-top: 8px;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background-color: var(--action-btn-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            margin-top: 16px;
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Barra de Busca Rápida com Botão Limpar (X) */
+        .search-box {
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 40px 12px 16px;
+            font-size: 0.95rem;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-main);
+            outline: none;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+        }
+
+        .btn-clear-search {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1rem;
+            cursor: pointer;
+            display: none;
+            padding: 4px;
+        }
+
+        .btn-clear-search.show {
+            display: block;
+        }
+
+        .btn-clear-search:hover {
+            color: var(--danger);
+        }
+
+        .registros-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .registro-row {
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+            position: relative;
+        }
+
+        .registro-row.devolvido {
+            opacity: 0.65;
+            border-color: rgba(16, 185, 129, 0.25);
+        }
+
+        .registro-row.perdido {
+            opacity: 0.85;
+            border-color: rgba(249, 115, 22, 0.4);
+        }
+
+        .row-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .user-info h3 {
+            font-size: 1.15rem;
+            color: var(--text-main);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .user-info span {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-family: monospace;
+            letter-spacing: 0.5px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-pill {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pill.ativo {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        .status-pill.devolvido {
+            background-color: rgba(100, 116, 139, 0.15);
+            color: var(--text-muted);
+        }
+
+        .status-pill.perdido {
+            background-color: rgba(249, 115, 22, 0.15);
+            color: var(--warning);
+        }
+
+        .btn-delete-single {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 4px;
+            transition: color 0.2s;
+        }
+
+        .btn-delete-single:hover {
+            color: var(--danger);
+        }
+
+        .row-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background-color: var(--details-bg);
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--details-border);
+            gap: 12px;
+        }
+
+        .detail-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .detail-group span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-group strong {
+            font-size: 0.85rem;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .actions-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-action-row {
+            flex: 1;
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            padding: 14px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .btn-lost-row {
+            flex: 1;
+            background-color: rgba(249, 115, 22, 0.1);
+            color: var(--warning);
+            border: 1px solid rgba(249, 115, 22, 0.25);
+            padding: 14px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .btn-found-row {
+            width: 100%;
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            padding: 14px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .confirm-box {
+            background-color: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            text-align: center;
+        }
+
+        .confirm-box.lost {
+            background-color: rgba(249, 115, 22, 0.08);
+            border-color: rgba(249, 115, 22, 0.25);
+        }
+
+        .confirm-box.found {
+            background-color: rgba(16, 185, 129, 0.08);
+            border-color: rgba(16, 185, 129, 0.25);
+        }
+
+        .confirm-box span {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .confirm-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-confirm-yes {
+            flex: 1;
+            background-color: var(--danger);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-confirm-yes.lost {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-confirm-yes.found {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-confirm-no {
+            flex: 1;
+            background-color: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .empty-list {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 60px 20px;
+            font-size: 1rem;
+            background-color: var(--input-bg);
+            border-radius: 16px;
+            border: 1px dashed var(--border-color);
+        }
+    </style>
 </head>
 <body>
 
-    <h1>Meu Projeto com Supabase</h1>
-    <p>Abra o console do navegador (F12) para ver os resultados da conexão.</p>
+    <!-- Aviso de Conexão Offline -->
+    <div id="offlineBanner" class="offline-banner">⚠️ Você está offline. Verifique sua conexão com a internet.</div>
+
+    <!-- MODAL DE SCANNER DE CÂMERA -->
+    <div id="scannerModal" class="scanner-modal">
+        <div class="scanner-box">
+            <h3>Centralizar Código / Crachá</h3>
+            <div id="reader"></div>
+            <button type="button" id="btnCloseScanner" class="btn-close-scanner">Fechar Câmera</button>
+        </div>
+    </div>
+
+    <!-- TELA DE LOGIN (Apenas Senha) -->
+    <div id="login-view" class="mobile-container">
+        <div id="toast-login" class="toast"></div>
+        <div class="header" style="margin-top: 40px;">
+            <h1>Área Restrita</h1>
+            <p>Digite a senha para acessar o painel.</p>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="loginSenha">Senha de Acesso</label>
+                <input type="password" id="loginSenha" placeholder="Digite a senha" required autocomplete="current-password">
+            </div>
+
+            <button type="submit" id="btnLoginSubmit" class="btn btn-primary">Entrar</button>
+        </form>
+    </div>
+
+    <!-- Barra de Ações Fixas no Topo (Direita) -->
+    <div class="top-actions hidden" id="topActionsContainer">
+        <!-- Botão Voltar -->
+        <button type="button" class="btn-floating-back hidden" id="btnVoltarCadastro">
+            ← Voltar
+        </button>
+
+        <!-- Menu Hambúrguer -->
+        <div class="hamburger-container">
+            <button type="button" class="btn-hamburger" id="btnHamburger">☰</button>
+            <div class="dropdown-menu" id="dropdownMenu">
+                <button type="button" class="dropdown-item" id="menuWhatsapp">📤 Enviar Ativos via WhatsApp</button>
+                <div class="dropdown-divider"></div>
+                
+                <!-- Botão de Alternar Tema (Claro / Escuro) -->
+                <button type="button" class="dropdown-item" id="menuToggleTheme">☀️ Alternar Tema Claro/Escuro</button>
+                <div class="dropdown-divider"></div>
+
+                <div id="filterContainer" class="hidden">
+                    <button type="button" class="dropdown-item" id="btnMenuFiltrar">🔍 Filtrar ▾</button>
+                    <div class="filter-submenu" id="filterSubmenu">
+                        <button type="button" class="dropdown-item active" data-filtro="todos">📄 Todos</button>
+                        <button type="button" class="dropdown-item" data-filtro="pendentes">⏳ Não Devolvidos</button>
+                        <button type="button" class="dropdown-item" data-filtro="perdidos">⚠️ Perdidos</button>
+                        <button type="button" class="dropdown-item" data-filtro="devolvidos">✅ Devolvidos</button>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                </div>
+
+                <button type="button" class="dropdown-item danger hidden" id="menuLimparTudo">🗑️ Limpar Histórico</button>
+                <button type="button" class="dropdown-item danger" id="menuLogout">🚪 Sair da Conta</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TELA PRINCIPAL DO APLICATIVO -->
+    <div class="mobile-container hidden" id="mainContainer">
+        <div id="toast" class="toast">✓ Sucesso!</div>
+
+        <!-- TELA 1: CADASTRO -->
+        <div id="cadastro-view">
+            <div class="header">
+                <h1>Painel de Acesso</h1>
+                <p>Insira os dados para liberar o cartão.</p>
+            </div>
+
+            <form id="accessForm">
+                <div class="form-group">
+                    <label for="nome">Nome</label>
+                    <input type="text" id="nome" placeholder="Digite o nome completo" required autocomplete="name">
+                </div>
+
+                <div class="form-group">
+                    <label for="cartao">Número do Cartão</label>
+                    <div class="input-cartao-wrapper">
+                        <input type="text" id="cartao" placeholder="Digite ou escaneie" required inputmode="numeric" pattern="[0-9]*">
+                        <button type="button" id="btnOpenScanner" class="btn-scan-camera" title="Escanear com a câmera">📷</button>
+                    </div>
+                    <div id="cartaoAvisoInput" class="cartao-aviso-input">⚠️ Este cartão já está em uso ou perdido!</div>
+                </div>
+
+                <button type="submit" id="btnCadastrarSubmit" class="btn btn-primary">Registrar Retirada</button>
+            </form>
+
+            <button type="button" class="btn btn-secondary" id="btnVerRegistros">Ver Histórico de Registros</button>
+        </div>
+
+        <!-- TELA 2: REGISTROS -->
+        <div id="registros-view" class="hidden">
+            <div class="header">
+                <h1>Histórico</h1>
+                <p>Controle de movimentações</p>
+            </div>
+
+            <!-- Campo de Busca Rápida com Botão Limpar (X) -->
+            <div class="search-box">
+                <input type="text" id="inputBuscaRapida" placeholder="🔍 Buscar por nome ou cartão...">
+                <button type="button" id="btnClearSearch" class="btn-clear-search">✕</button>
+            </div>
+
+            <div class="registros-container" id="listaRegistros">
+                <!-- Itens injetados via JS -->
+            </div>
+        </div>
+    </div>
 
     <script>
-        // 2. Credenciais do seu projeto
         const SUPABASE_URL = 'https://djgwbjieslxqvhatfirc.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_hv5R2009VodI3IYGu4mv_g_mOWmZVvp';
+        const SUPABASE_KEY = 'sb_publishable_hv5R2009VodI3IYGu4mv_g_mOWmZVvp';  
 
-        // 3. Inicialização do cliente Supabase
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const EMAIL_SISTEMA = 'rte001@gmail.com';
 
-        // Exemplo de função para testar a conexão buscando dados de uma tabela
-        // (Substitua 'sua_tabela' pelo nome real de uma tabela que você criou no Supabase)
-        async function testarConexao() {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('sua_tabela')
-                    .select('*')
-                    .limit(5);
+        const offlineBanner = document.getElementById('offlineBanner');
+        const loginView = document.getElementById('login-view');
+        const mainContainer = document.getElementById('mainContainer');
+        const loginForm = document.getElementById('loginForm');
+        const btnLoginSubmit = document.getElementById('btnLoginSubmit');
+        const toastLogin = document.getElementById('toast-login');
 
-                if (error) {
-                    console.error('Erro ao buscar dados:', error.message);
-                } else {
-                    console.log('Dados recebidos com sucesso:', data);
+        const form = document.getElementById('accessForm');
+        const inputNome = document.getElementById('nome');
+        const inputCartao = document.getElementById('cartao');
+        const cartaoAvisoInput = document.getElementById('cartaoAvisoInput');
+        const btnCadastrarSubmit = document.getElementById('btnCadastrarSubmit');
+        const cadastroView = document.getElementById('cadastro-view');
+        const registrosView = document.getElementById('registros-view');
+        const btnVerRegistros = document.getElementById('btnVerRegistros');
+        
+        const topActionsContainer = document.getElementById('topActionsContainer');
+        const btnVoltarCadastro = document.getElementById('btnVoltarCadastro');
+        const btnHamburger = document.getElementById('btnHamburger');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        
+        const menuWhatsapp = document.getElementById('menuWhatsapp');
+        const menuToggleTheme = document.getElementById('menuToggleTheme');
+        const filterContainer = document.getElementById('filterContainer');
+        const btnMenuFiltrar = document.getElementById('btnMenuFiltrar');
+        const filterSubmenu = document.getElementById('filterSubmenu');
+        const filterOptions = filterSubmenu.querySelectorAll('[data-filtro]');
+
+        const menuLimparTudo = document.getElementById('menuLimparTudo');
+        const menuLogout = document.getElementById('menuLogout');
+
+        const inputBuscaRapida = document.getElementById('inputBuscaRapida');
+        const btnClearSearch = document.getElementById('btnClearSearch');
+        const toast = document.getElementById('toast');
+        const listaRegistros = document.getElementById('listaRegistros');
+
+        // Elementos do Scanner de Câmera
+        const btnOpenScanner = document.getElementById('btnOpenScanner');
+        const scannerModal = document.getElementById('scannerModal');
+        const btnCloseScanner = document.getElementById('btnCloseScanner');
+        let html5QrCode = null;
+
+        let registros = [];
+        let acaoEmAndamento = { id: null, tipo: null };
+        let filtroAtual = 'todos';
+        let termoBusca = '';
+
+        // Preferência de Tema Salva
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-theme');
+        }
+
+        menuToggleTheme.addEventListener('click', () => {
+            dropdownMenu.classList.remove('show');
+            document.body.classList.toggle('light-theme');
+            if (document.body.classList.contains('light-theme')) {
+                localStorage.setItem('theme', 'light');
+            } else {
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+
+        // Configuração e Disparo do Scanner de Câmera
+        btnOpenScanner.addEventListener('click', () => {
+            scannerModal.classList.add('show');
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("reader");
+            }
+            
+            const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                config, 
+                (decodedText) => {
+                    // Sucesso ao ler
+                    inputCartao.value = decodedText.replace(/\s+/g, '').trim();
+                    inputCartao.dispatchEvent(new Event('input'));
+                    fecharScanner();
+                    mostrarToast('✓ Código lido com sucesso!');
+                },
+                (errorMessage) => {
+                    // Erros de leitura quadro a quadro são ignorados para fluidez
                 }
-            } catch (err) {
-                console.error('Erro inesperado:', err);
+            ).catch(err => {
+                mostrarToast('Erro ao acessar a câmera!', true);
+                fecharScanner();
+            });
+        });
+
+        function fecharScanner() {
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => {
+                    scannerModal.classList.remove('show');
+                }).catch(() => {
+                    scannerModal.classList.remove('show');
+                });
+            } else {
+                scannerModal.classList.remove('show');
             }
         }
 
-        // Executa o teste ao carregar a página
-        testarConexao();
-    </script>
+        btnCloseScanner.addEventListener('click', fecharScanner);
 
+        function atualizarStatusConexao() {
+            if (!navigator.onLine) {
+                offlineBanner.classList.add('show');
+            } else {
+                offlineBanner.classList.remove('show');
+            }
+        }
+        window.addEventListener('online', atualizarStatusConexao);
+        window.addEventListener('offline', atualizarStatusConexao);
+        atualizarStatusConexao();
+
+        inputNome.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                inputCartao.focus();
+            }
+        });
+
+        inputCartao.addEventListener('input', (e) => {
+            const val = e.target.value.replace(/\s+/g, '').trim();
+            if (!val) {
+                cartaoAvisoInput.classList.remove('show');
+                return;
+            }
+
+            const emUso = registros.some(reg => reg.cartao === val && (reg.status === 'ativo' || reg.status === 'perdido'));
+            if (emUso) {
+                cartaoAvisoInput.classList.add('show');
+            } else {
+                cartaoAvisoInput.classList.remove('show');
+            }
+        });
+
+        btnHamburger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdownMenu.classList.toggle('show');
+        });
+
+        btnMenuFiltrar.addEventListener('click', (e) => {
+            e.stopPropagation();
+            filterSubmenu.classList.toggle('show');
+            if (filterSubmenu.classList.contains('show')) {
+                btnMenuFiltrar.innerHTML = '🔍 Filtrar ▴';
+            } else {
+                btnMenuFiltrar.innerHTML = '🔍 Filtrar ▾';
+            }
+        });
+
+        window.addEventListener('click', () => {
+            dropdownMenu.classList.remove('show');
+            filterSubmenu.classList.remove('show');
+            btnMenuFiltrar.innerHTML = '🔍 Filtrar ▾';
+        });
+
+        filterOptions.forEach(opt => {
+            opt.addEventListener('click', () => {
+                filterOptions.forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+                filtroAtual = opt.getAttribute('data-filtro');
+                dropdownMenu.classList.remove('show');
+                filterSubmenu.classList.remove('show');
+                btnMenuFiltrar.innerHTML = '🔍 Filtrar ▾';
+                renderizarRegistros();
+            });
+        });
+
+        inputBuscaRapida.addEventListener('input', (e) => {
+            termoBusca = e.target.value.toLowerCase().trim();
+            if (termoBusca.length > 0) {
+                btnClearSearch.classList.add('show');
+            } else {
+                btnClearSearch.classList.remove('show');
+            }
+            renderizarRegistros();
+        });
+
+        btnClearSearch.addEventListener('click', () => {
+            inputBuscaRapida.value = '';
+            termoBusca = '';
+            btnClearSearch.classList.remove('show');
+            inputBuscaRapida.focus();
+            renderizarRegistros();
+        });
+
+        menuWhatsapp.addEventListener('click', () => {
+            dropdownMenu.classList.remove('show');
+            const ativos = registros.filter(r => r.status === 'ativo');
+            
+            if (ativos.length === 0) {
+                mostrarToast('Nenhum crachá ativo no momento!', true);
+                return;
+            }
+
+            let texto = `📋 *RELATÓRIO DE CRACHÁS ATIVOS*\n\n`;
+            ativos.forEach((r, index) => {
+                texto += `${index + 1}. *${r.nome}* (Cartão: ${r.cartao})\nRetirada: ${r.retirada}\n\n`;
+            });
+
+            const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
+            window.open(url, '_blank');
+        });
+
+        let touchStartY = 0;
+        window.addEventListener('touchstart', (e) => {
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        window.addEventListener('touchend', async (e) => {
+            let touchEndY = e.changedTouches[0].clientY;
+            if (window.scrollY === 0 && (touchEndY - touchStartY > 100) && !registrosView.classList.contains('hidden')) {
+                await carregarRegistros();
+                renderizarRegistros();
+                mostrarToast('✓ Registros atualizados!');
+            }
+        }, { passive: true });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const senha = document.getElementById('loginSenha').value.trim();
+
+            btnLoginSubmit.disabled = true;
+            btnLoginSubmit.textContent = 'Entrando...';
+
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: EMAIL_SISTEMA,
+                    password: senha,
+                });
+
+                if (error) throw error;
+
+                loginView.classList.add('hidden');
+                mainContainer.classList.remove('hidden');
+                topActionsContainer.classList.remove('hidden');
+                await carregarRegistros();
+            } catch (err) {
+                mostrarToastLogin('Senha incorreta ou erro de conexão!', true);
+            } finally {
+                btnLoginSubmit.disabled = false;
+                btnLoginSubmit.textContent = 'Entrar';
+            }
+        });
+
+        menuLogout.addEventListener('click', async () => {
+            dropdownMenu.classList.remove('show');
+            if (!confirm('Deseja realmente sair da conta?')) return;
+
+            await supabaseClient.auth.signOut();
+            window.location.reload();
+        });
+
+        async function verificarSessao() {
+            try {
+                const { data: { session }, error } = await supabaseClient.auth.getSession();
+                if (error) throw error;
+
+                if (session) {
+                    loginView.classList.add('hidden');
+                    mainContainer.classList.remove('hidden');
+                    topActionsContainer.classList.remove('hidden');
+                    await carregarRegistros();
+                } else {
+                    loginView.classList.remove('hidden');
+                    mainContainer.classList.add('hidden');
+                    topActionsContainer.classList.add('hidden');
+                }
+            } catch (err) {
+                loginView.classList.remove('hidden');
+                mainContainer.classList.add('hidden');
+                topActionsContainer.classList.add('hidden');
+            }
+        }
+
+        verificarSessao();
+
+        async function carregarRegistros() {
+            listaRegistros.innerHTML = `<div class="empty-list">Carregando registros...</div>`;
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('Controle de crachá')
+                    .select('*')
+                    .order('id', { ascending: false });
+
+                if (error) throw error;
+
+                registros = (data || []).sort((a, b) => {
+                    const pesoStatus = (status) => {
+                        if (status === 'ativo') return 1;
+                        if (status === 'perdido') return 2;
+                        return 3; 
+                    };
+
+                    const pesoA = pesoStatus(a.status);
+                    const pesoB = pesoStatus(b.status);
+
+                    if (pesoA !== pesoB) {
+                        return pesoA - pesoB;
+                    }
+                    return b.id - a.id;
+                });
+            } catch (err) {
+                mostrarToast('Erro ao carregar registros', true);
+                registros = [];
+            }
+        }
+
+        function formatarDataHora(dataObj) {
+            const options = {  
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',   
+                hour: '2-digit', 
+                minute: '2-digit' 
+            };
+            return new Intl.DateTimeFormat('pt-BR', options).format(dataObj);
+        }
+
+        function mostrarToast(mensagem, isError = false) {
+            toast.textContent = mensagem;
+            toast.className = `toast ${isError ? 'error' : ''} show`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3500);
+        }
+
+        function mostrarToastLogin(mensagem, isError = false) {
+            toastLogin.textContent = mensagem;
+            toastLogin.className = `toast ${isError ? 'error' : ''} show`;
+            setTimeout(() => {
+                toastLogin.classList.remove('show');
+            }, 2500);
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const nome = inputNome.value.trim();
+            const cartao = inputCartao.value.replace(/\s+/g, '').trim();
+
+            const cartaoBloqueado = registros.some(reg => reg.cartao === cartao && (reg.status === 'ativo' || reg.status === 'perdido'));
+
+            if (cartaoBloqueado) {
+                mostrarToast('Cartão pendente (ativo ou perdido). Devolva-o antes!', true);
+                return;
+            }
+
+            const novoRegistro = {
+                nome: nome,
+                cartao: cartao,
+                retirada: formatarDataHora(new Date()),
+                devolucao: 'Pendente',
+                status: 'ativo'
+            };
+
+            btnCadastrarSubmit.disabled = true;
+            btnCadastrarSubmit.textContent = 'Salvando...';
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('Controle de crachá')
+                    .insert([novoRegistro])
+                    .select();
+
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    registros.unshift(data[0]);
+                    form.reset();
+                    cartaoAvisoInput.classList.remove('show');
+                    mostrarToast('✓ Cadastrado com sucesso!');
+                    inputNome.focus();
+                }
+            } catch (err) {
+                mostrarToast('Erro ao salvar registro', true);
+            } finally {
+                btnCadastrarSubmit.disabled = false;
+                btnCadastrarSubmit.textContent = 'Registrar Retirada';
+            }
+        });
+
+        btnVerRegistros.addEventListener('click', async () => {
+            inputBuscaRapida.value = '';
+            termoBusca = '';
+            btnClearSearch.classList.remove('show');
+            await carregarRegistros();
+            acaoEmAndamento = { id: null, tipo: null };
+            filtroAtual = 'todos';
+            filterOptions.forEach(o => {
+                o.classList.remove('active');
+                if(o.getAttribute('data-filtro') === 'todos') o.classList.add('active');
+            });
+            renderizarRegistros();
+            cadastroView.classList.add('hidden');
+            registrosView.classList.remove('hidden');
+            btnVoltarCadastro.classList.remove('hidden'); 
+            filterContainer.classList.remove('hidden'); 
+            menuLimparTudo.classList.remove('hidden'); 
+            window.scrollTo(0, 0);
+        });
+
+        btnVoltarCadastro.addEventListener('click', () => {
+            registrosView.classList.add('hidden');
+            cadastroView.classList.remove('hidden');
+            btnVoltarCadastro.classList.add('hidden'); 
+            filterContainer.classList.add('hidden'); 
+            filterSubmenu.classList.remove('show');
+            btnMenuFiltrar.innerHTML = '🔍 Filtrar ▾';
+            menuLimparTudo.classList.add('hidden'); 
+            window.scrollTo(0, 0);
+            inputNome.focus();
+        });
+
+        window.deletarRegistro = async function(id) {
+            if (!confirm('Deseja realmente apagar este registro?')) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('Controle de crachá')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+                await carregarRegistros();
+                renderizarRegistros();
+                mostrarToast('Registro apagado com sucesso!');
+            } catch (err) {
+                mostrarToast('Erro ao apagar registro', true);
+            }
+        };
+
+        menuLimparTudo.addEventListener('click', async () => {
+            dropdownMenu.classList.remove('show');
+            if (registros.length === 0) {
+                mostrarToast('O histórico já está vazio!', true);
+                return;
+            }
+
+            if (!confirm('ATENÇÃO: Deseja apagar TODOS os registros do histórico permanentemente?')) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('Controle de crachá')
+                    .delete()
+                    .neq('id', 0); 
+
+                if (error) throw error;
+                await carregarRegistros();
+                renderizarRegistros();
+                mostrarToast('Histórico limpo com sucesso!');
+            } catch (err) {
+                mostrarToast('Erro ao limpar o histórico', true);
+            }
+        });
+
+        window.solicitarAcao = function(id, tipo) {
+            acaoEmAndamento = { id: id, tipo: tipo };
+            renderizarRegistros();
+        };
+
+        window.cancelarAcao = function() {
+            acaoEmAndamento = { id: null, tipo: null };
+            renderizarRegistros();
+        };
+
+        window.confirmarDevolucao = async function(id) {
+            try {
+                const devolucaoHora = formatarDataHora(new Date());
+                const { error } = await supabaseClient
+                    .from('Controle de crachá')
+                    .update({ devolucao: devolucaoHora, status: 'devolvido' })
+                    .eq('id', id);
+
+                if (error) throw error;
+                await carregarRegistros();
+                acaoEmAndamento = { id: null, tipo: null };
+                renderizarRegistros();
+            } catch (err) {
+                mostrarToast('Erro ao atualizar devolução', true);
+            }
+        };
+
+        window.confirmarPerdido = async function(id) {
+            try {
+                const { error } = await supabaseClient
+                    .from('Controle de crachá')
+                    .update({ devolucao: 'Perdido', status: 'perdido' })
+                    .eq('id', id);
+
+                if (error) throw error;
+                await carregarRegistros();
+                acaoEmAndamento = { id: null, tipo: null };
+                renderizarRegistros();
+            } catch (err) {
+                mostrarToast('Erro ao atualizar status', true);
+            }
+        };
+
+        window.confirmarEncontrado = async function(id) {
+            try {
+                const devolucaoHora = formatarDataHora(new Date());
+                const { error } = await supabaseClient
+                    .from('Controle de crachá')
+                    .update({ devolucao: devolucaoHora, status: 'devolvido' })
+                    .eq('id', id);
+
+                if (error) throw error;
+                await carregarRegistros();
+                acaoEmAndamento = { id: null, tipo: null };
+                renderizarRegistros();
+            } catch (err) {
+                mostrarToast('Erro ao atualizar status', true);
+            }
+        };
+
+        function renderizarRegistros() {
+            let registrosFiltrados = registros.filter(reg => {
+                let passaFiltroStatus = true;
+                if (filtroAtual === 'pendentes') passaFiltroStatus = reg.status === 'ativo';
+                if (filtroAtual === 'perdidos') passaFiltroStatus = reg.status === 'perdido';
+                if (filtroAtual === 'devolvidos') passaFiltroStatus = reg.status === 'devolvido';
+
+                if (!passaFiltroStatus) return false;
+
+                if (termoBusca) {
+                    const nomeMatch = reg.nome && reg.nome.toLowerCase().includes(termoBusca);
+                    const cartaoMatch = reg.cartao && reg.cartao.toLowerCase().includes(termoBusca);
+                    return nomeMatch || cartaoMatch;
+                }
+
+                return true;
+            });
+
+            if (registrosFiltrados.length === 0) {
+                listaRegistros.innerHTML = `<div class="empty-list">Nenhum registro encontrado.</div>`;
+                return;
+            }
+
+            listaRegistros.innerHTML = '';
+            registrosFiltrados.forEach(reg => {
+                const isDevolvido = reg.status === 'devolvido';
+                const isPerdido = reg.status === 'perdido';
+                const isAtivo = reg.status === 'ativo';
+
+                const row = document.createElement('div');
+                let rowClass = '';
+                if (isDevolvido) rowClass = 'devolvido';
+                if (isPerdido) rowClass = 'perdido';
+                row.className = `registro-row ${rowClass}`;
+                
+                let acaoHtml = '';
+                
+                if (isAtivo) {
+                    if (acaoEmAndamento.id === reg.id) {
+                        if (acaoEmAndamento.tipo === 'devolver') {
+                            acaoHtml = `
+                                <div class="confirm-box">
+                                    <span>Confirmar devolução?</span>
+                                    <div class="confirm-buttons">
+                                        <button type="button" class="btn-confirm-yes" onclick="confirmarDevolucao(${reg.id})">Sim</button>
+                                        <button type="button" class="btn-confirm-no" onclick="cancelarAcao()">Não</button>
+                                    </div>
+                                </div>
+                            `;
+                        } else if (acaoEmAndamento.tipo === 'perdido') {
+                            acaoHtml = `
+                                <div class="confirm-box lost">
+                                    <span>Marcar cartão como perdido?</span>
+                                    <div class="confirm-buttons">
+                                        <button type="button" class="btn-confirm-yes lost" onclick="confirmarPerdido(${reg.id})">Sim</button>
+                                        <button type="button" class="btn-confirm-no" onclick="cancelarAcao()">Não</button>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    } else {
+                        acaoHtml = `
+                            <div class="actions-group">
+                                <button type="button" class="btn-action-row" onclick="solicitarAcao(${reg.id}, 'devolver')">Devolução</button>
+                                <button type="button" class="btn-lost-row" onclick="solicitarAcao(${reg.id}, 'perdido')">Perdido</button>
+                            </div>
+                        `;
+                    }
+                } else if (isPerdido) {
+                    if (acaoEmAndamento.id === reg.id && acaoEmAndamento.tipo === 'encontrado') {
+                        acaoHtml = `
+                            <div class="confirm-box found">
+                                <span>Cartão foi encontrado?</span>
+                                <div class="confirm-buttons">
+                                    <button type="button" class="btn-confirm-yes found" onclick="confirmarEncontrado(${reg.id})">Sim</button>
+                                    <button type="button" class="btn-confirm-no" onclick="cancelarAcao()">Não</button>
+                                    </div>
+                                </div>
+                            `;
+                    } else {
+                        acaoHtml = `<button type="button" class="btn-found-row" onclick="solicitarAcao(${reg.id}, 'encontrado')">Cartão Encontrado</button>`;
+                    }
+                }
+
+                let statusText = 'Ativo';
+                let statusClass = 'ativo';
+                if (isDevolvido) {
+                    statusText = 'Devolvido';
+                    statusClass = 'devolvido';
+                } else if (isPerdido) {
+                    statusText= 'Perdido';
+                    statusClass = 'perdido';
+                }
+
+                row.innerHTML = `
+                    <div class="row-top">
+                        <div class="user-info">
+                            <h3>${reg.nome}</h3>
+                            <span>${reg.cartao}</span>
+                        </div>
+                        <div class="header-actions">
+                            <div class="status-pill ${statusClass}">
+                                ${statusText}
+                            </div>
+                            <button type="button" class="btn-delete-single" onclick="deletarRegistro(${reg.id})" title="Apagar registro">🗑️</button>
+                        </div>
+                    </div>
+                    
+                    <div class="row-details">
+                        <div class="detail-group">
+                            <span>Retirada</span>
+                            <strong>${reg.retirada}</strong>
+                        </div>
+                        <div class="detail-group">
+                            <span>Devolução</span>
+                            <strong>${reg.devolucao}</strong>
+                        </div>
+                    </div>
+
+                    ${acaoHtml}
+                `;
+                listaRegistros.appendChild(row);
+            });
+        }
+    </script>
 </body>
 </html>
